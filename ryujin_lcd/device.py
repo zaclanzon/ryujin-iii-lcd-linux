@@ -217,6 +217,21 @@ class Ryujin:
             self.cmd(bytes([0x53, i]) + lab + val)
         self.cmd(bytes([0x52, 0x02, next_layout, 0x02, 0x02, *bg]) + b"\xFF" * 17)
 
+    def hwmon_update(self, lines):
+        """Replace the values on an already shown hardware-monitor page.
+
+        Only the line commands are sent: the begin/commit pair redraws the page from
+        black and flickers, the bare line commands update in place (verified 2026-09-03)."""
+        for i, (label, value) in enumerate(lines[:3]):
+            lab = label.encode("ascii", "replace")[:18].ljust(18, b"\0")
+            val = value.encode("utf-8")[:42]
+            self.cmd(bytes([0x53, i]) + lab + val)
+
+    def current_item(self):
+        """(kind or mode, source, slot) of what the screen shows; 0x21 = hardware monitor."""
+        r = self.cmd(b"\xD0")
+        return r[5], r[6], r[7]
+
     def banner(self, kind, slot, lines, font=3, align=0, color=(255, 255, 255, 255), duration=5, x=8):
         """Wallpaper `slot` with up to 6 text lines (40 px apart), then start the slideshow.
         Verified 2026-09-03: a stored JPG is selected by this background command (0x10 + slot),

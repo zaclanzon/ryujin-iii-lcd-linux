@@ -113,7 +113,9 @@ EC 51 21                                                              mode = har
   untested. Unit glyphs render correctly.
 - The HAL re-sends the group every ~5.5 s for as long as the job exists; the
   device keeps showing the last strings, so a Linux daemon only needs to send
-  when values change.
+  when values change. **Send only the `53` line commands for an update**: the
+  begin/commit pair redraws the page from black and flickers visibly, while
+  bare line commands replace the values in place (verified 2026-09-03).
 
 ## Slideshow and media playback (`5D`, `51`, `60`, `11`)
 

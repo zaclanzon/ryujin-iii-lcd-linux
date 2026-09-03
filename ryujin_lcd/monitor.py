@@ -11,8 +11,11 @@ power (W), curr (A), freq (MHz). Without LINE arguments the file
 ~/.config/ryujin-lcd/monitor.conf is read (one LABEL=HWMON/SENSOR per line, # comments),
 falling back to the three defaults above.
 
-The page is only re-sent when a displayed value changes, plus a keepalive every
---keepalive seconds, so the shared HID interface stays quiet for the hwmon driver.
+The full page (layout + mode) is sent once, and again whenever the cooler reports
+it is no longer showing the monitor page (checked every --keepalive seconds).
+Value changes go out as bare line updates, which the panel redraws in place; the
+full page redraws from black and flickers. Nothing is sent while values are
+unchanged, so the shared HID interface stays quiet for the hwmon driver.
 """
 import argparse
 import glob
@@ -90,18 +93,25 @@ def main():
         sys.exit("no lines")
     print("lines:", ", ".join(f"{l}={h}/{s}" for l, h, s, _ in specs), flush=True)
 
-    dev, last, sent_at = None, None, 0.0
+    dev, last, checked_at = None, None, 0.0
     while True:
         page = [(label, read_value(hw, attr, fmt)) for label, hw, attr, fmt in specs]
         now = time.monotonic()
         changed = page != last
-        if changed or now - sent_at >= a.keepalive:
+        if changed or now - checked_at >= a.keepalive:
             try:
                 if dev is None:
                     dev = Ryujin(a.verbose)
-                dev.hwmon([(l, add_unit_glyphs(v)) for l, v in page])
-                dev.mode(MODE_HWMON)
-                last, sent_at = page, now
+                lines = [(l, add_unit_glyphs(v)) for l, v in page]
+                if last is None or (now - checked_at >= a.keepalive and dev.current_item()[0] != MODE_HWMON):
+                    dev.hwmon(lines)          # full page: layout, lines, commit
+                    dev.mode(MODE_HWMON)
+                    checked_at = now
+                elif changed:
+                    dev.hwmon_update(lines)   # lines only: no flicker
+                if now - checked_at >= a.keepalive:
+                    checked_at = now
+                last = page
                 if a.verbose or changed:
                     print(time.strftime("%H:%M:%S"), " | ".join(f"{l} {v}" for l, v in page), flush=True)
             except (RyujinError, OSError) as e:
