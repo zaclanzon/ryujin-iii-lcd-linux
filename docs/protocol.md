@@ -218,7 +218,20 @@ with `EC 73` and do nothing (no event, no IN data); `11` gets no reply and
 raises the event `EE 14 09`. enableFileStreamTransfer sub-codes `00 01 03`
 answer `EC 7F 01` / `EC 7F 02` inside and outside a begin-write session,
 never the chunk-size reply that `02` gets inside one, and never any IN data.
-The panel therefore keeps a local copy of every upload for thumbnails.
+The panel therefore keeps a local copy of every upload for thumbnails, which
+is what Armoury Crate does too (`ArmouryDevice\View\externalFiles\aio\RYUJIN_III`,
+slot map in `fp_1_config.xml`; those copies match the bulk payload byte for byte).
+
+Firmware: no firmware update was ever captured (the Update Center session in
+run 1 updated the HAL and the device page only; `deviceinfo.ini` shows
+`Firmware_Count=0`, `FirmwareFlow=0`, and the HAL's cold start sent only
+checkIsSupport, GetFwVersion, GetDisplayStatus, GetPumpSensorData,
+setSlideshowList and playMedia). The HAL DLL's S750 class does contain
+`readChipInfo`, `writeChipInfo`, `GetPLCFwVersion` and `FormatDisk`, and a
+`Global\AIOFanFWUpdate` mutex, with command ids unknown. That is the reason
+not to sweep command ids on this device: a wrong guess can land on
+`FormatDisk` or a chip write. Everything above stayed inside the
+file-operation family (`72`, `73`, `7F`) whose ids are known.
 
 Standby mode was only written, never observed. Hardware-monitor colors and
 the `02 02` theme bytes, the `C6` clock byte, the third media class in the

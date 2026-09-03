@@ -118,6 +118,42 @@ in the same browser cannot drive the cooler through it.
 A file that is on screen cannot be deleted: the cooler acknowledges the command
 and keeps the file. The panel reports this; show something else first.
 
+### Coming from Windows: thumbnails for what Armoury Crate uploaded
+
+The cooler never sends a file back (probed, see [docs/protocol.md](docs/protocol.md)),
+so a slot filled from Windows shows as *no local copy* here. Armoury Crate has the
+same limitation and solves it the same way: it keeps every upload, already
+converted to 320x240, under
+
+```
+C:\Program Files (x86)\ASUS\ArmouryDevice\View\externalFiles\aio\RYUJIN_III\<id>.gif|jpg
+```
+
+and records which id sits in which slot in its profile
+`C:\ProgramData\ASUS\Framework\aioFan\RYUJIN3\fp_1_config.xml` (base64 of
+URL-encoded JSON, `display.media.uploadImages[]` with `mediaIndex` = slot, `category`
+0 = GIF, 1 = JPG). Those copies are byte-identical to what is on the device
+(checked against the captured bulk transfer). To take them over, mount the Windows
+system partition read-only and run the importer:
+
+```
+sudo mount -o ro,noexec /dev/nvme0n1p3 /mnt     # your Windows partition; see lsblk -f
+systemctl --user stop ryujin-lcd-web            # the importer asks the cooler for its slot table
+ryujin-lcd-web --import-windows /mnt
+systemctl --user start ryujin-lcd-web
+sudo umount /mnt
+```
+
+It prints one line per slot Armoury Crate knows and copies the file into
+`~/.local/share/ryujin-lcd/media` for slots the cooler lists as used; the panel
+shows them after its next storage refresh (the refresh button, or within a
+minute). Stop the web service or monitor service first: two programs on the
+HID interface at the same time can pick up each other's replies. Slots filled by the `ryujin-lcd` CLI are not in
+the Windows profile; re-upload those from the panel to get a thumbnail. Armoury Crate
+only ever uses slots 0-9, so a used slot above 9 always came from Linux. The original,
+unconverted files you picked in Armoury Crate are not kept by it; look in your own
+folders (Downloads, Pictures) if you want to upload them again at full quality.
+
 ## Protocol in one paragraph
 
 Two USB interfaces. Interface 1 is HID: every command is a 65-byte output report

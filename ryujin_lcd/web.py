@@ -1,6 +1,7 @@
 """Web control panel for the Ryujin III LCD, in the style of Armoury Crate.
 
   ryujin-lcd-web [--host 127.0.0.1] [--port 8686] [--demo] [--no-restore] [-v]
+  ryujin-lcd-web --import-windows /mnt      thumbnails from Armoury Crate's copies, see import_windows()
 
 Serves a single-page app (ryujin_lcd/static) and a JSON API from the Python standard
 library, no framework. Everything the CLI does is available: display mode (hardware
@@ -386,6 +387,58 @@ def forget_media(ftype, slot):
             os.remove(p)
         except OSError:
             pass
+
+
+def import_windows(root, storage=None):
+    """Take over Armoury Crate's local copies of the media it uploaded, from a mounted
+    Windows partition (read-only is fine). Armoury Crate cannot read files back either:
+    it keeps every upload, already converted to 320x240, under
+      <root>/Program Files (x86)/ASUS/ArmouryDevice/View/externalFiles/aio/RYUJIN_III/<id>.gif|jpg
+    and its profile maps each id to a device slot:
+      <root>/ProgramData/ASUS/Framework/aioFan/RYUJIN3/fp_1_config.xml
+    (base64 of URL-encoded JSON; display.media.uploadImages[] = {id, category 0 gif / 1 jpg,
+    ext, mediaIndex}). Verified 2026-09-03: the copy is byte-identical to what went over the
+    bulk pipe. Returns [(ftype, slot, name, bytes, note)]; storage (from parse_disk_info)
+    marks slots the device does not list as used."""
+    import base64, re
+    root = root.rstrip("/")
+    profile = os.path.join(root, "ProgramData/ASUS/Framework/aioFan/RYUJIN3/fp_1_config.xml")
+    media = os.path.join(root, "Program Files (x86)/ASUS/ArmouryDevice/View/externalFiles/aio")
+    try:
+        xml = open(profile, errors="replace").read()
+    except OSError as e:
+        raise ApiError(f"no Armoury Crate profile at {profile}: {e}")
+    items = None
+    for blob in re.findall(r"[A-Za-z0-9+/=]{200,}", xml):
+        try:
+            cfg = json.loads(urllib.parse.unquote(base64.b64decode(blob).decode("utf-8", "replace")))
+            items = cfg["display"]["media"]["uploadImages"]
+            break
+        except (ValueError, KeyError, TypeError):
+            continue
+    if items is None:
+        raise ApiError(f"{profile}: no uploadImages list found in the profile")
+    dirs = [d for d in glob.glob(os.path.join(media, "RYUJIN_III*")) if os.path.isdir(d)]
+    out = []
+    for it in items:
+        ftype = {"0": "gif", "1": "jpg"}.get(str(it.get("category")))
+        if ftype is None:
+            continue
+        slot, name = int(it["mediaIndex"]), f"{it['id']}.{it.get('ext', ftype)}"
+        src = next((os.path.join(d, name) for d in dirs if os.path.isfile(os.path.join(d, name))), None)
+        if src is None:
+            out.append((ftype, slot, name, 0, "file missing on the Windows side")); continue
+        data = open(src, "rb").read()
+        note = ""
+        if not data.startswith(MAGIC[ftype]):
+            note = f"not a {ftype} file, skipped"
+        elif storage and slot not in storage[ftype]["used"]:
+            note = "slot is empty on the device, skipped"
+        else:
+            save_media(ftype, slot, data, f"armoury-crate-{ftype}-{slot}.{EXT[ftype]}")
+            note = "local copy taken"
+        out.append((ftype, slot, name, len(data), note))
+    return out
 
 
 def merge(base, upd):
@@ -871,8 +924,26 @@ def main():
     ap.add_argument("--port", type=int, default=8686)
     ap.add_argument("--demo", action="store_true", help="simulated device and sensors, no cooler needed")
     ap.add_argument("--no-restore", action="store_true", help="do not re-apply the saved mode at start")
+    ap.add_argument("--import-windows", metavar="MOUNT",
+                    help="take thumbnails for the stored media from Armoury Crate's copies on a mounted "
+                         "Windows partition (e.g. /mnt), then exit")
     ap.add_argument("-v", "--verbose", action="store_true", help="log requests and every HID report")
     a = ap.parse_args()
+    if a.import_windows:
+        storage = None
+        try:
+            dev = Ryujin(a.verbose)
+            storage = parse_disk_info(dev.disk_info())
+            dev.close()
+        except RyujinError as e:
+            print(f"cooler not reachable ({e}); importing without checking the slots", file=sys.stderr)
+        try:
+            rows = import_windows(a.import_windows, storage)
+        except ApiError as e:
+            sys.exit(str(e))
+        for ftype, slot, name, n, note in rows:
+            print(f"{ftype} {slot:2d}  {name:45s} {n:7d} B  {note}")
+        return
     serve(a.host, a.port, a.demo, a.verbose, not a.no_restore)
 
 
