@@ -211,6 +211,15 @@ device has loaded the file, so read it a second or two after a play command.
 
 ## Still unknown
 
+No way to read a file back was found (probed 2026-09-03 on firmware 0108):
+the vendor interface has a bulk IN endpoint `0x81`, but nothing ever arrives
+on it. SetFileOperation `00 02 04 05 10 12 13 80 81 82` are acknowledged
+with `EC 73` and do nothing (no event, no IN data); `11` gets no reply and
+raises the event `EE 14 09`. enableFileStreamTransfer sub-codes `00 01 03`
+answer `EC 7F 01` / `EC 7F 02` inside and outside a begin-write session,
+never the chunk-size reply that `02` gets inside one, and never any IN data.
+The panel therefore keeps a local copy of every upload for thumbnails.
+
 Standby mode was only written, never observed. Hardware-monitor colors and
 the `02 02` theme bytes, the `C6` clock byte, the third media class in the
 storage table, and what `60 00 01 00 xx` (background without the `10`
