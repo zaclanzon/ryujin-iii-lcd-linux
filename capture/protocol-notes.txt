@@ -1,0 +1,180 @@
+ROG RYUJIN III (USB 0B05:1AA2) 3.5" LCD PROTOCOL - decoded from Armoury Crate, 2026-09-02
+==========================================================================================
+Sources: ryujin-lcd.pcap[ng] (USBPcap run 2, 22:43:37-23:23:15, hub \\.\USBPcap2, cooler = bus 2 addr 10),
+ryujin-lcd-ryujin-device-only.pcapng (197 KB, everything for the cooler), ryujin-lcd-transfers.txt,
+asus-logs\2026-09-02.log (AacAIOFanHal 1.5.10.0 log, class S750 = Ryujin III; it prints every HID
+report as W:/R: 64-byte dumps), analysis\hid-timeline.txt (every HID write/response with timestamp),
+analysis\hid-unique-writes.txt / hid-unique-reads.txt, analysis\bulk-*.bin (bulk payloads), actions-log.txt.
+Firmware: GetFwVersion -> "AURJ2-S750-0108" (ASCII). Device page 4.01.39, HAL 1.5.10.0, AIOFanSDK 3.00.36.
+LCD: 320x240 (landscape; the page also offers a vertical 240x320 layout, not exercised).
+
+1. TRANSPORT
+------------
+Composite device, two interfaces:
+  MI_00  vendor-specific, WinUSB.  bulk OUT EP 0x01 (512 B packets).  Only used for file (media) data.
+  MI_01  HID.  interrupt OUT EP 0x02 / interrupt IN EP 0x82, 64-byte reports, report IDs 0xEC and 0xEE.
+Every command is ONE 65-byte interrupt-OUT write (report id 0xEC + 64 bytes; the HAL dumps show
+"[EC, <63 bytes>]" = 64 bytes including the id; the pcap shows 65-byte URBs).  Every command gets ONE
+64-byte interrupt-IN response whose byte 1 echoes the command byte (the "get" commands answer with a
+different id, listed below).  No SET_REPORT / GET_REPORT control transfers are used; the only control
+traffic in the capture is descriptor reads.  Unsolicited event reports use report id 0xEE (interrupt IN)
+and were seen only during file operations.  Unused bytes are 0x00.  The HAL waits for the response
+before the next command (~30 ms typical, ~120-230 ms for layout/status commands, ~500 ms for file ops).
+
+2. COMMAND SUMMARY (byte 0 = 0xEC, byte 1 = command)
+-----------------------------------------------------
+cmd   HAL name                   direction / notes
+0x02  (reply id of 0x82)         GetFwVersion reply: EC 02 00 "AURJ2-S750-0108"
+0x11  setClock                   set device clock (used by the Time/clock slideshow item)
+0x19  (reply id of 0x99)         GetPumpSensorData reply
+0x50  (reply id of 0xD0)         checkIsSupport reply: EC 50 00 01 30 10 01 04 01
+0x51  playMedia / setOledDisplayMode   select what the LCD shows
+0x52  setHWmonitorLayout         hardware-monitor page layout / colors (begin + commit)
+0x53  setHWmonitorString         one text line of the hardware-monitor page (label + value)
+0x5C  SetDisplayStatus           brightness, standby, standby animation; also the reply id of 0xDC
+0x5D  setSlideshowList           define the slideshow entry (kind, type, index, duration)
+0x60  setSlideshowBannerBG / setSlideshowBannerText   wallpaper + text overlay ("banner")
+0x71  UpdateDiskInfo             ask device to refresh its media storage table (EC 71 01 01)
+0x71  (reply id of 0xF1)         GetDiskInfo reply (storage totals + slot bitmaps)
+0x72  SetFileIndex               select media slot: EC 72 01 <type> <index>
+0x73  SetFileOperation           01 = begin write, FF = end write, 03 = delete selected slot
+0x7F  enableFileStreamTransfer   announce file size, device answers chunk size (0x1000)
+0x82  GetFwVersion               EC 82
+0x99  GetPumpSensorData          EC 99
+0xD0  checkIsSupport             EC D0
+0xDC  GetDisplayStatus           EC DC  -> reply EC 5C ...
+0xF1  GetDiskInfo                EC F1  -> reply EC 71 ...
+Event reports (0xEE, interrupt IN): EE 12 00 00 (disk info updated), EE 13 00 01 (file op begin ack),
+EE 14 00 00 0A / EE 14 00 00 08 (file data received), EE 13 00 FF (file op end ack); the delete ack is
+logged by the HAL as "[0x13 0x10]" - see the pcap around 23:21:01 for the exact bytes.
+
+3. DISPLAY STATUS  (EC DC -> EC 5C ...  /  EC 5C 01 ... to set)
+--------------------------------------------------------------
+Reply / write layout (byte index within the 64-byte report, byte 1 = 0x5C):
+  [2]  00 in the reply, 01 in the write ("set")
+  [3]  00
+  [4]  64        (100, constant here)
+  [5]  00
+  [6]  00
+  [7]  64        (100, constant)
+  [8]  10        current-media kind flag (0x10 = GIF animation, see section 5)
+  [9]  01        current-media type (1 = gif, 0 = jpg)
+  [10] 04        current-media index (custom slot 4 was the last media applied before the run)
+  [11] 00
+  [12] brightness percent: 0x1E=30, 0x64=100, 0x0A=10, 0x32=50. The UI slider steps by 10 (min 10).
+  [13] standby-mode enable: 0x10 = on, 0x00 = off (when the user turned Standby OFF the page also
+       wrote brightness 0 in [12]; turning it back ON wrote 00 10 first, then 1E 10).
+  [14] standby animation type (01 = gif)
+  [15] standby animation index (custom gif slot; 04, then 00 when slot 0 was chosen, then 04 again)
+  rest 00
+The page always does GetDisplayStatus, SetDisplayStatus (same bytes back with [2]=01), GetDisplayStatus
+again before any Apply.  Temperature warning on/off and its threshold are NOT sent to the device: the
+HAL's WarningPlayer polls the CPU temperature on the host (addWarningJob) and only draws something when
+it trips, so no warning-mode traffic was captured (threshold 80 C never reached).
+
+4. HARDWARE MONITOR MODE  (cmds 0x52, 0x53, 0x51 0x21)
+-----------------------------------------------------
+Apply sequence (22:46:37), then repeated every ~5.5 s by the HAL for as long as the job exists (the
+5 s / 10 s "duration" only sets how long each sensor group stays before the next group):
+  EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF      layout "begin", group 0
+  EC 53 00 "CPU"(18-byte field) ... "43.0" E2 84 83                    line 0 label + value
+  EC 53 01 "CPU Volt." ... "1.066" E2 86 8A                            line 1
+  EC 53 02 "CPU Fan Speed" ... "716" E2 86 8C                          line 2
+  EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF   layout "commit"
+  EC 51 21                                                            display mode = hardware monitor
+  ... 5 s later, group 1 (single sensor):
+  EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+  EC 53 00 "CPU" ... "43.0" E2 84 83
+  EC 52 02 00 02 02 00 00 00 FF FF ... FF
+setHWmonitorLayout (0x52): [2] 0x82 = begin/clear (bit 7) vs 0x02 = commit/show; [3] alternates 00/02
+with the group (00 with the 3-line group in "begin", 02 with the 1-line group; the commit carries the
+other value - probably "next group" or a layout id); [4][5] = 02 02 constant (theme/orientation; theme 0
+horizontal here); [6..8] = background RGB (00 00 00); then [9] 00 + text RGB FF FF FF, repeated three
+times (per line) in "begin"; the commit variant has FF from [9] to [25].  Only theme 0 with black
+background / white text was captured - change theme/colors in Armoury Crate to map the rest.
+setHWmonitorString (0x53): [2] = line index 0..2, [3..20] = label, ASCII, NUL padded (18 bytes),
+[21..] = value string, UTF-8, NUL terminated.  Unit glyphs are code points in the device font:
+U+2103 (E2 84 83) = degree C, U+218A (E2 86 8A) = "V", U+218C (E2 86 8C) = "RPM".
+Sensor ids in the profile (100859922 = CPU temp, 100794385 = CPU core voltage, 100925459 = CPU fan)
+are Armoury-Crate-side only.
+
+5. SLIDESHOW / MEDIA MODE  (cmds 0x5D, 0x51, 0x60, 0x11)
+-------------------------------------------------------
+Apply of a slideshow with one item:
+  EC 5D 00 01 <kind> <type> <index> <duration>       setSlideshowList
+  EC 51 <kind> <type> <index>                        playMedia (start showing it)
+  kind: 0x10 = GIF animation, 0x04 = JPG wallpaper, 0x08 = clock
+  type: 01 = gif, 00 = jpg   (the HAL logs "src: 0x00, type: 0x01, index: 0x05")
+  index: media slot on the device (custom gif slots 0..9, custom jpg slots 0..9; default images live in
+         the firmware and use the same kind/type/index space - the profile calls it index_format)
+  duration: seconds per still image (0x05).  [3] = 01 = number of list entries (only 1-item lists seen).
+Examples: EC 5D 00 01 10 01 04 05 + EC 51 10 01 04  (custom gif slot 4)
+          EC 5D 00 01 10 01 05 05 + EC 51 10 01 05  (custom gif slot 5 = rgbw-4frames.gif just uploaded)
+          EC 51 1F   setOledDisplayMode sent by the HAL before wallpaper/banner applies ("FW >= 0104"
+                     branch); EC 51 21 = hardware monitor mode
+Wallpaper with text ("banner"): Apply of stripes.jpg with text "ABC", left aligned, white, small font:
+  EC 60 00 01 10 01                                setSlideshowBannerBG  (background kind/type/index,
+                                                   trailing zeros trimmed: EC 60 00 01 <kind> <type> <idx>)
+  EC 60 00 02 00 03 00 FF FF FF FF 08 00 17 00 41 42 43   setSlideshowBannerText line 0: "ABC"
+  EC 60 00 02 01 03 00 FF FF FF FF 08 00 3F        line 1 (empty)
+  EC 60 00 02 02 03 00 FF FF FF FF 08 00 67        line 2 ... lines 3,4,5 use 8F, B7, DF
+  EC 5D 00 01 04 00 01 05                          setSlideshowList kind 04 (jpg) type 00 index 01
+setSlideshowBannerText: [2]=00, [3]=02 (sub-cmd text), [4]=line 0..5, [5]=03 (font size?), [6]=00
+(alignment, 0 = left), [7..10]=FF FF FF FF (text color RGB + ?), [11]=08, [12..13]=00 17 / 00 3F /
+00 67 / 00 8F / 00 B7 / 00 DF = y position of the line (0x17=23, step 0x28=40 px), [14]=00,
+[15..]=text ASCII.  Variants seen for the BG: EC 60 00 01 10 01 (ROG default / stripes), EC 60 00 01 10
+(red.jpg = jpg index 0), EC 60 00 01 (after the delete).
+Clock item: EC 11 C6 09 02 03 01 11 21 49 01  (setClock for "Wed Sep 2 23:21:49 2026": 09 = month,
+02 = day, 03 = weekday, 11 21 49 = 11:21:49 BCD 12-hour, 01 = PM; C6 09 and the 01 after 03 are not
+decoded - capture a second clock apply at another date/time), then EC 5D 00 01 08 00 01 05 and
+EC 51 08 00 01.
+
+6. MEDIA UPLOAD (the part liquidctl's set_screen needs)
+-------------------------------------------------------
+Armoury Crate first converts the file on the host with dll\AIOFanSDKPlugin\ResizeGifTool.exe /
+ResizeJpg.exe (crop + resize to 320x240; a GIF stays a GIF, a JPG stays a JPEG - no raw-RGB conversion).
+The device stores the file as-is.  Upload of a 2070-byte GIF into custom gif slot 5 (23:12:14-16):
+  EC 71 01 01                UpdateDiskInfo            -> R EC 71 ; event EE 12 00 00
+  EC F1                      GetDiskInfo               -> R EC 71 00 01 A8 7E 00 00 78 55 00 00 10 00 00 00 00 10 00 00 00 00 10 1F
+  EC 72 01 02 05             SetFileIndex  [2]=01, [3]=file type (02 = gif, 01 = jpg), [4]=slot
+  EC 73 01                   SetFileOperation begin    -> R EC 73 ; event EE 13 00 01
+  EC 7F 02 16 08             enableFileStreamTransfer: [2]=02, [3..4]=file size u16 LE (0x0816=2070)
+                             -> R EC 7F 00 00 10 : [3..4]=chunk size u16 LE = 0x1000 = 4096
+  bulk OUT EP 0x01: the file bytes in 4096-byte writes, last chunk zero-padded to 4096
+                             (5785-byte jpg -> 4096 + 4096; 2070-byte gif -> one 4096-byte write)
+                             -> event EE 14 00 00 0A (gif) / EE 14 00 00 08 (jpg)
+  EC 73 FF                   SetFileOperation end      -> R EC 73 ; event EE 13 00 FF
+Then the page saves the profile and, on Apply, sends setSlideshowList/playMedia for the new slot.
+GetDiskInfo reply layout: [2]=00 [3]=01, [4..7] u32 LE total = 0x7EA8 = 32424 (KB), [8..11] u32 LE free =
+0x5578 = 21880 KB (21872 after the gif, 21864 after the first jpg: 8 KB per file), [12..15] = 10 00 00 00,
+[16..19] = 00 10 <jpg-slot bitmap> 00 (01 once red.jpg was in jpg slot 0), [20..23] = 00 00 10 <gif-slot
+bitmap> (1F = custom gif slots 0-4 present, 3F after slot 5 was written).
+Delete (23:21:01, red.jpg in jpg slot 0):  EC 72 01 01 00  SetFileIndex (type 01, slot 0), then
+  EC 73 03  SetFileOperation delete -> R EC 73 + event.
+Bulk payloads extracted from the pcap: analysis\bulk-gif.bin (== resized 8f95b7b8...gif + zero pad),
+analysis\bulk-stripes.bin (== resized f944d54e...jpg + pad), analysis\bulk-red.bin (source file was
+removed by the delete test; it is a 1829-byte JFIF + pad).
+The device holds 10 custom gif + 10 custom jpg slots; Armoury Crate caps gifs at 2000 frames.
+
+7. OTHER
+--------
+GetPumpSensorData EC 99 -> EC 19 00 00 00 25 <n> 90 06 26 66 03 ... (pump/fan rpm + liquid temp, not the
+LCD, left undecoded; e.g. 0x0690 = 1680, 0x0626 = 1574, 0x0366 = 870).
+checkIsSupport EC D0 -> EC 50 00 01 30 10 01 04 01 (capabilities; then the current media 10 01 04).
+The HAL sends nothing LCD-related while no display job is active (run 1, 9 minutes: only status polls).
+Once a job is set it re-sends hardware-monitor strings every ~5.5 s forever, even with the Armoury
+Crate window closed (ArmouryCrate.Service hosts the HAL).
+
+8. LINUX IMPLEMENTATION SKETCH (liquidctl)
+-----------------------------------------
+hidraw (MI_01) for everything except file data; libusb bulk write to EP 0x01 of interface 0 for the data.
+  def cmd(b): hid.write(bytes([0xEC]) + b.ljust(63, b'\0')); return hid.read(64)
+  brightness(p):  st = bytearray(cmd(b'\xDC')); st[2] = 1; st[12] = p; cmd(bytes(st[1:]))
+  hw monitor:     cmd(52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF); cmd(53 idx label value) x n;
+                  cmd(52 02 02 02 02 00 00 00 FF*17); cmd(51 21)
+  upload gif->slot s:  cmd(71 01 01); cmd(F1); cmd(72 01 02 s); cmd(73 01); cmd(7F 02 lo hi);
+                  for chunk in 4096-byte pieces (last zero-padded): usb.bulk_write(0x01, chunk); cmd(73 FF)
+  show it:        cmd(5D 00 01 10 01 s 05); cmd(51 10 01 s)
+  jpg: type 01 / kind 04 instead of 02 / 10.   Delete: cmd(72 01 type s); cmd(73 03).
+Open questions: file-size field beyond 65535 bytes (only a u16 was seen; bigger files may use [5..6]),
+setHWmonitorLayout color/theme fields, setClock year field, whether the 0xEE events must be consumed.

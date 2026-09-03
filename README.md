@@ -1,0 +1,103 @@
+# ryujin3-lcd
+
+Drive the 3.5" LCD of the **ASUS ROG Ryujin III** AIO cooler (USB `0b05:1aa2`,
+firmware `AURJ2-S750-0108`) from Linux, without Armoury Crate.
+
+The protocol was captured from Armoury Crate on Windows and then replayed and
+checked on the panel from Linux. Nothing public implemented it before: liquidctl's
+`set_screen` for this cooler raises "not yet reverse engineered" and the kernel's
+`asus_rog_ryujin` hwmon driver leaves the screen to userspace. The full write-up
+is [docs/protocol.md](docs/protocol.md); the raw material (parsed HID timeline,
+bulk payloads, device-only pcapng, capture runbook) is in [capture/](capture/).
+
+What works, all verified on the hardware:
+
+- brightness, standby settings
+- the hardware-monitor page: up to three label/value lines with the device's
+  °C, RPM and V glyphs
+- upload of GIFs (tested with 400 KB, 30 frames) and JPEGs into the cooler's own
+  storage (16 slots each, Armoury Crate uses 10), and deleting them
+- playing a stored GIF, showing a stored JPEG, optionally with up to six lines of
+  text (color, alpha, left/right alignment)
+- the clock page, 12 or 24 hour
+- reading back firmware, display status, storage table and the current item
+
+The device keeps playing whatever was last selected, with no host involvement,
+across reboots.
+
+## Install
+
+```
+sudo apt install python3-usb python3-pil      # pyusb for uploads, Pillow to resize images
+git clone https://github.com/zaclanzon/ryujin3-lcd && cd ryujin3-lcd
+./install.sh                                  # udev rule (sudo), ~/.local/bin/ryujin-lcd
+ryujin-lcd info
+```
+
+`install.sh` copies the package under `~/.local/lib` and writes wrappers, so the
+system Python is untouched. `pipx install .` works too. The udev rule gives the
+`plugdev` group and the logged-in user access to the cooler's hidraw node and to
+its raw USB node (the vendor bulk interface carries the file data). Without it
+run everything as root.
+
+The tool coexists with the `asus_rog_ryujin` hwmon driver on the same HID
+interface: it skips the driver's replies and the driver ignores the LCD replies.
+Mainline has the Ryujin III but not yet USB PID `0x1aa2`; a patch was sent to
+linux-hwmon in September 2026.
+
+## Use
+
+```
+ryujin-lcd info
+ryujin-lcd brightness 60
+ryujin-lcd hwmon "Coolant=40.9°C" "Pump=1920 RPM" "CPU=1.066V"
+ryujin-lcd upload cat.gif gif 0 --show      # cropped and resized to 320x240
+ryujin-lcd upload photo.jpg jpg 0 --show
+ryujin-lcd show gif 0
+ryujin-lcd banner jpg 0 "line one" "line two" --color FF0000FF --align 1 --x 312
+ryujin-lcd clock --24h
+ryujin-lcd delete jpg 0
+ryujin-lcd raw DC                          # any command, prints the reply
+ryujin-lcd monitor 10                      # dump incoming reports for 10 s
+```
+
+`-v` prints every report on the wire.
+
+### Live sensor page
+
+`ryujin-lcd-monitor` keeps the hardware-monitor page fed from hwmon and re-sends
+only when a value changes:
+
+```
+ryujin-lcd-monitor Coolant=rog_ryujin/temp1 Pump=rog_ryujin/fan1 CPU=k10temp/temp1
+./install.sh --monitor            # same thing as a user service, reading ~/.config/ryujin-lcd/monitor.conf
+```
+
+Lines are `LABEL=HWMON/SENSOR` where `HWMON` is the driver name in
+`/sys/class/hwmon/*/name` and `SENSOR` the attribute without `_input`
+(`temp1`, `fan2`, `in0`, `power1`, ...). Up to three lines.
+
+## Protocol in one paragraph
+
+Two USB interfaces. Interface 1 is HID: every command is a 65-byte output report
+(`EC` + 64 bytes) with one 64-byte reply, written straight to hidraw. Interface 0
+is a vendor bulk pipe used only for file data, in 4096-byte writes, each
+acknowledged by an `EE 14` event on HID. Media are addressed by (kind, source,
+slot). Three things the capture alone got wrong and only the panel revealed:
+brightness lives in byte 7 of the display-status report (Armoury Crate writes
+byte 12, which does nothing), the hardware-monitor commit byte is the line count
+minus one, and a stored JPEG is selected by the wallpaper background command,
+not by the list entry Armoury Crate also sends. Details, byte layouts and the
+still-unknown fields: [docs/protocol.md](docs/protocol.md).
+
+## Status and contributions
+
+Tested on one Ryujin III 360 with firmware 0108. Untested: the White / EVA /
+Extreme variants (same HAL class in Armoury Crate, so probably identical),
+portrait orientation, standby behavior, monitor-page colors. A liquidctl
+`set_screen` implementation can be built directly from `ryujin_lcd/device.py`.
+Issues and captures from other units welcome.
+
+## License
+
+MIT.

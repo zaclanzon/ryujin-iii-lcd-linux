@@ -1,0 +1,48 @@
+## GetFwVersion cmd 02: 1 distinct
+   EC 02 00 41 55 52 4A 32 2D 53 37 35 30 2D 30 31 30 38
+## setClock cmd 11: 1 distinct
+   EC 11
+## GetPumpSensorData cmd 19: 5 distinct
+   EC 19 00 00 00 25 03 90 06 26 66 03
+   EC 19 00 00 00 25 03 90 06 26 84 03
+   EC 19 00 00 00 25 04 90 06 26 66 03
+   EC 19 00 00 00 25 05 AE 06 27 84 03
+   EC 19 00 00 00 25 06 AE 06 27 66 03
+## checkIsSupport cmd 50: 1 distinct
+   EC 50 00 01 30 10 01 04 01
+## playMedia cmd 51: 1 distinct
+   EC 51
+## setOledDisplayMode cmd 51: 1 distinct
+   EC 51
+## setHWmonitorLayout cmd 52: 1 distinct
+   EC 52
+## setHWmonitorString cmd 53: 1 distinct
+   EC 53
+## GetDisplayStatus cmd 5C: 7 distinct
+   EC 5C 00 00 64 00 00 64 10 01 00 00 1E 10 01
+   EC 5C 00 00 64 00 00 64 10 01 04 00 00 00 01 04
+   EC 5C 00 00 64 00 00 64 10 01 04 00 00 10 01 04
+   EC 5C 00 00 64 00 00 64 10 01 04 00 0A 10 01 04
+   EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+   EC 5C 00 00 64 00 00 64 10 01 04 00 32 10 01 04
+   EC 5C 00 00 64 00 00 64 10 01 04 00 64 10 01 04
+## SetDisplayStatus cmd 5C: 1 distinct
+   EC 5C
+## setSlideshowList cmd 5D: 1 distinct
+   EC 5D
+## setSlideshowBannerBG cmd 60: 1 distinct
+   EC 6
+## setSlideshowBannerText cmd 60: 1 distinct
+   EC 6
+## GetDiskInfo cmd 71: 3 distinct
+   EC 71 00 01 A8 7E 00 00 68 55 00 00 10 00 00 00 00 10 01 00 00 00 10 3F
+   EC 71 00 01 A8 7E 00 00 70 55 00 00 10 00 00 00 00 10 00 00 00 00 10 3F
+   EC 71 00 01 A8 7E 00 00 78 55 00 00 10 00 00 00 00 10 00 00 00 00 10 1F
+## UpdateDiskInfo cmd 71: 1 distinct
+   EC 71
+## SetFileIndex cmd 72: 1 distinct
+   EC 72
+## SetFileOperation cmd 73: 1 distinct
+   EC 73
+## enableFileStreamTransfer cmd 7F: 1 distinct
+   EC 7F 00 00 1

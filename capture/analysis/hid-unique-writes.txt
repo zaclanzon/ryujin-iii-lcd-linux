@@ -1,0 +1,385 @@
+## setClock  (x1, first 23:21:49,737)
+   EC 11 C6 09 02 03 01 11 21 49 01
+     ctx: [MultiMediaPlayer::initPlayer] -In-
+     ctx: [S750::setClock] Time -> Wed Sep  2 23:21:49 2026
+     ctx: [S750::setClock][S750::DoCommand] Start. ----------
+## playMedia  (x7, first 22:44:41,069)
+   EC 51 10 01 04
+     ctx: [S750::playMedia] In.
+     ctx: [S750::playMedia] src: 0x00, type: 0x01, index: 0x04.
+     ctx: [S750::playMedia][S750::DoCommand] Start. ----------
+## playMedia  (x1, first 23:13:08,030)
+   EC 51 10 01 05
+     ctx: [S750::playMedia] In.
+     ctx: [S750::playMedia] src: 0x00, type: 0x01, index: 0x05.
+     ctx: [S750::playMedia][S750::DoCommand] Start. ----------
+## playMedia  (x1, first 23:21:49,923)
+   EC 51 08 00 01
+     ctx: [S750::playMedia] In.
+     ctx: [S750::playMedia] src: 0x01, type: 0x03, index: 0x01.
+     ctx: [S750::playMedia][S750::DoCommand] Start. ----------
+## setOledDisplayMode  (x1, first 22:46:37,753)
+   EC 51 21
+     ctx: [S750::setHWmonitorLayout][S750::DoCommand] End. ----------
+     ctx: [S750::setOledDisplayMode] In.
+     ctx: [S750::setOledDisplayMode][S750::DoCommand] Start. ----------
+## setOledDisplayMode  (x5, first 23:14:38,027)
+   EC 51 1F
+     ctx: [MultiMediaPlayer::play] FW version >= 0104
+     ctx: [S750::setOledDisplayMode] In.
+     ctx: [S750::setOledDisplayMode][S750::DoCommand] Start. ----------
+## setHWmonitorLayout  (x34, first 22:46:37,335)
+   EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+     ctx: [AacS750Function][addMultiHwMonitorJob] -Out-
+     ctx: [MultiHwMonitorPlayer::play] (0: 100859922,	1,	CPU,	CPU,	430)
+     ctx: [S750::setHWmonitorLayout][S750::DoCommand] Start. ----------
+## setHWmonitorLayout  (x34, first 22:46:37,612)
+   EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+     ctx: [S750::setHWmonitorString][S750::DoCommand] End. ----------
+     ctx: [S750::setHWmonitorString] DoCommand success.
+     ctx: [S750::setHWmonitorLayout][S750::DoCommand] Start. ----------
+## setHWmonitorLayout  (x33, first 22:46:42,861)
+   EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+     ctx: [MultiHwMonitorPlayer::play] -In-
+     ctx: [MultiHwMonitorPlayer::play] (0: 100859922,	1,	CPU,	CPU,	430)
+     ctx: [S750::setHWmonitorLayout][S750::DoCommand] Start. ----------
+## setHWmonitorLayout  (x33, first 22:46:43,044)
+   EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+     ctx: [S750::setHWmonitorString][S750::DoCommand] End. ----------
+     ctx: [S750::setHWmonitorString] DoCommand success.
+     ctx: [S750::setHWmonitorLayout][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x50, first 22:46:37,473)
+   EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+     ctx: [S750::setHWmonitorLayout][S750::DoCommand] End. ----------
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(3):"CPU"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:46:37,520)
+   EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 30 36 36 E2 86 8A
+     ctx: [MultiHwMonitorPlayer::play] (1: 100794385,	0,	CPU Volt.,	CPU Core Voltage,	1066)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(9):"CPU Volt."
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x2, first 22:46:37,566)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 36 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	716)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x9, first 22:46:48,464)
+   EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+     ctx: [MultiHwMonitorPlayer::play] (1: 100794385,	0,	CPU Volt.,	CPU Core Voltage,	1128)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(9):"CPU Volt."
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x3, first 22:46:48,511)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 33 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	713)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x9, first 22:46:59,614)
+   EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+     ctx: [MultiHwMonitorPlayer::play] (1: 100794385,	0,	CPU Volt.,	CPU Core Voltage,	1137)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(9):"CPU Volt."
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x3, first 22:46:59,661)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 37 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	717)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x3, first 22:47:10,955)
+   EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 35 2E 30 E2 84 83
+     ctx: [S750::setHWmonitorLayout][S750::DoCommand] End. ----------
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(3):"CPU"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x6, first 22:47:11,001)
+   EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 31 39 E2 86 8A
+     ctx: [MultiHwMonitorPlayer::play] (1: 100794385,	0,	CPU Volt.,	CPU Core Voltage,	1119)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(9):"CPU Volt."
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:47:11,048)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 36 33 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	763)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x2, first 22:47:33,508)
+   EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 30 31 E2 86 8A
+     ctx: [MultiHwMonitorPlayer::play] (1: 100794385,	0,	CPU Volt.,	CPU Core Voltage,	1101)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(9):"CPU Volt."
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x3, first 22:47:55,424)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 35 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	725)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x7, first 22:48:17,703)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 34 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	724)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x11, first 22:48:23,340)
+   EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+     ctx: [S750::setHWmonitorLayout][S750::DoCommand] End. ----------
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(3):"CPU"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:48:29,000)
+   EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 31 30 E2 86 8A
+     ctx: [MultiHwMonitorPlayer::play] (1: 100794385,	0,	CPU Volt.,	CPU Core Voltage,	1110)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(9):"CPU Volt."
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:48:29,047)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 33 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	703)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:49:34,572)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 37 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	707)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:49:45,455)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 35 34 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	754)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x4, first 22:49:56,361)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 33 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	723)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:50:29,990)
+   EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 36 33 E2 86 8A
+     ctx: [MultiHwMonitorPlayer::play] (1: 100794385,	0,	CPU Volt.,	CPU Core Voltage,	1163)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(9):"CPU Volt."
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:50:30,036)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 32 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	712)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x5, first 22:50:52,300)
+   EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 34 36 E2 86 8A
+     ctx: [MultiHwMonitorPlayer::play] (1: 100794385,	0,	CPU Volt.,	CPU Core Voltage,	1146)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(9):"CPU Volt."
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x3, first 22:51:08,952)
+   EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 34 2E 30 E2 84 83
+     ctx: [S750::setHWmonitorLayout][S750::DoCommand] End. ----------
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(3):"CPU"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:51:25,863)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 32 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	702)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:51:36,992)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 36 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	706)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:51:47,894)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 38 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	718)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:51:58,762)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 34 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	704)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:52:09,864)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 33 38 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	738)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:52:20,983)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 30 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	710)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## setHWmonitorString  (x1, first 22:52:31,931)
+   EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 37 E2 86 8C
+     ctx: [MultiHwMonitorPlayer::play] (2: 100925459,	2,	CPU Fan Speed,	CPU Fan,	727)
+     ctx: [S750::setHWmonitorString] line1(0):"", line2(13):"CPU Fan Speed"
+     ctx: [S750::setHWmonitorString][S750::DoCommand] Start. ----------
+## SetDisplayStatus  (x19, first 22:46:36,757)
+   EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+     ctx: [AacS750Function][getDeviceStatus] -Out-
+     ctx: [AacS750Function][setDeviceStatus] -In-
+     ctx: [S750::SetDisplayStatus][S750::DoCommand] Start. ----------
+## SetDisplayStatus  (x2, first 22:48:30,849)
+   EC 5C 01 00 64 00 00 64 10 01 04 00 64 10 01 04
+     ctx: [AacS750Function][getDeviceStatus] -Out-
+     ctx: [AacS750Function][setDeviceStatus] -In-
+     ctx: [S750::SetDisplayStatus][S750::DoCommand] Start. ----------
+## SetDisplayStatus  (x4, first 22:49:15,088)
+   EC 5C 01 00 64 00 00 64 10 01 04 00 0A 10 01 04
+     ctx: [AacS750Function][getDeviceStatus] -Out-
+     ctx: [AacS750Function][setDeviceStatus] -In-
+     ctx: [S750::SetDisplayStatus][S750::DoCommand] Start. ----------
+## SetDisplayStatus  (x4, first 22:49:59,597)
+   EC 5C 01 00 64 00 00 64 10 01 04 00 32 10 01 04
+     ctx: [AacS750Function][getDeviceStatus] -Out-
+     ctx: [AacS750Function][setDeviceStatus] -In-
+     ctx: [S750::SetDisplayStatus][S750::DoCommand] Start. ----------
+## SetDisplayStatus  (x1, first 22:50:59,763)
+   EC 5C 01 00 64 00 00 64 10 01 04 00 00 00 01 04
+     ctx: [AacS750Function][getDeviceStatus] -Out-
+     ctx: [AacS750Function][setDeviceStatus] -In-
+     ctx: [S750::SetDisplayStatus][S750::DoCommand] Start. ----------
+## SetDisplayStatus  (x1, first 22:51:09,386)
+   EC 5C 01 00 64 00 00 64 10 01 04 00 00 10 01 04
+     ctx: [AacS750Function][getDeviceStatus] -Out-
+     ctx: [AacS750Function][setDeviceStatus] -In-
+     ctx: [S750::SetDisplayStatus][S750::DoCommand] Start. ----------
+## SetDisplayStatus  (x2, first 22:52:06,188)
+   EC 5C 01 00 64 00 00 64 10 01 00 00 1E 10 01
+     ctx: [AacS750Function][getDeviceStatus] -Out-
+     ctx: [AacS750Function][setDeviceStatus] -In-
+     ctx: [S750::SetDisplayStatus][S750::DoCommand] Start. ----------
+## setSlideshowList  (x7, first 22:44:40,930)
+   EC 5D 00 01 10 01 04 05
+     ctx: [MultiMediaPlayer::initPlayer] -In-
+     ctx: [MultiMediaPlayer::initPlayer] type: 1, src: 0, idx_fmt: 4
+     ctx: [S750::setSlideshowList][S750::DoCommand] Start. ----------
+## setSlideshowList  (x1, first 23:13:07,891)
+   EC 5D 00 01 10 01 05 05
+     ctx: [MultiMediaPlayer::initPlayer] -In-
+     ctx: [MultiMediaPlayer::initPlayer] type: 1, src: 0, idx_fmt: 5
+     ctx: [S750::setSlideshowList][S750::DoCommand] Start. ----------
+## setSlideshowList  (x3, first 23:14:37,886)
+   EC 5D 00 01 04 00 01 05
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] End. ----------
+     ctx: [S750::setSlideshowList][S750::DoCommand] Start. ----------
+## setSlideshowList  (x2, first 23:19:25,830)
+   EC 5D 00 01 04 00 00 05
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] End. ----------
+     ctx: [S750::setSlideshowList][S750::DoCommand] Start. ----------
+## setSlideshowList  (x1, first 23:21:49,781)
+   EC 5D 00 01 08 00 01 05
+     ctx: [S750::setClock][S750::DoCommand] End. ----------
+     ctx: [MultiMediaPlayer::initPlayer] type: 3, src: 1, idx_fmt: 1
+     ctx: [S750::setSlideshowList][S750::DoCommand] Start. ----------
+## setSlideshowBannerBG  (x3, first 23:14:37,558)
+   EC 60 00 01 10 01
+     ctx: [S750::GetDisplayStatus][S750::DoCommand] End. ----------
+     ctx: [S750::GetDisplayStatus] Out.
+     ctx: [S750::setSlideshowBannerBG][S750::DoCommand] Start. ----------
+## setSlideshowBannerBG  (x1, first 23:19:25,505)
+   EC 60 00 01 1
+     ctx: [S750::GetDisplayStatus][S750::DoCommand] End. ----------
+     ctx: [S750::GetDisplayStatus] Out.
+     ctx: [S750::setSlideshowBannerBG][S750::DoCommand] Start. ----------
+## setSlideshowBannerBG  (x1, first 23:21:02,131)
+   EC 60 00 01
+     ctx: [S750::GetDisplayStatus][S750::DoCommand] End. ----------
+     ctx: [S750::GetDisplayStatus] Out.
+     ctx: [S750::setSlideshowBannerBG][S750::DoCommand] Start. ----------
+## setSlideshowBannerText  (x3, first 23:14:37,605)
+   EC 60 00 02 00 03 00 FF FF FF FF 08 00 17
+     ctx: [S750::setSlideshowBannerBG][S750::DoCommand] Start. ----------
+     ctx: [S750::setSlideshowBannerBG][S750::DoCommand] End. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+## setSlideshowBannerText  (x5, first 23:14:37,652)
+   EC 60 00 02 01 03 00 FF FF FF FF 08 00 3F
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] End. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+## setSlideshowBannerText  (x5, first 23:14:37,699)
+   EC 60 00 02 02 03 00 FF FF FF FF 08 00 67
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] End. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+## setSlideshowBannerText  (x5, first 23:14:37,746)
+   EC 60 00 02 03 03 00 FF FF FF FF 08 00 8F
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] End. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+## setSlideshowBannerText  (x5, first 23:14:37,793)
+   EC 60 00 02 04 03 00 FF FF FF FF 08 00 B7
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] End. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+## setSlideshowBannerText  (x5, first 23:14:37,839)
+   EC 60 00 02 05 03 00 FF FF FF FF 08 00 DF
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] End. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+## setSlideshowBannerText  (x2, first 23:16:56,303)
+   EC 60 00 02 00 03 00 FF FF FF FF 08 00 17 00 41 42 43
+     ctx: [S750::setSlideshowBannerBG][S750::DoCommand] Start. ----------
+     ctx: [S750::setSlideshowBannerBG][S750::DoCommand] End. ----------
+     ctx: [S750::setSlideshowBannerText][S750::DoCommand] Start. ----------
+## UpdateDiskInfo  (x3, first 23:12:14,373)
+   EC 71 01 01
+     ctx: [AacS750Function][getDeviceStatus] -Out-
+     ctx: [AacS750Function][getDiskInfo] -In-
+     ctx: [S750::UpdateDiskInfo][S750::DoCommand] Start. ----------
+## SetFileIndex  (x1, first 23:12:14,674)
+   EC 72 01 02 05
+     ctx: [AacS750Function][mediaTransfer] -In-
+     ctx: [S750::WriteFile2FW] In. File name: C:\Program Files (x86)\ASUS\ArmouryDevice\view\externalFiles\aio\RYUJIN_III\8f95b7b8-5961-425e-a127-397459441676.gif
+     ctx: [S750::SetFileIndex][S750::DoCommand] Start. ----------
+## SetFileIndex  (x2, first 23:13:54,922)
+   EC 72 01 01
+     ctx: [AacS750Function][mediaTransfer] -In-
+     ctx: [S750::WriteFile2FW] In. File name: C:\Program Files (x86)\ASUS\ArmouryDevice\view\externalFiles\aio\RYUJIN_III\b8fac637-52df-4401-8117-aebe14f9e1f7.jpg
+     ctx: [S750::SetFileIndex][S750::DoCommand] Start. ----------
+## SetFileIndex  (x1, first 23:14:21,707)
+   EC 72 01 01 01
+     ctx: [AacS750Function][mediaTransfer] -In-
+     ctx: [S750::WriteFile2FW] In. File name: C:\Program Files (x86)\ASUS\ArmouryDevice\view\externalFiles\aio\RYUJIN_III\f944d54e-0558-4ca3-ac51-1ca403cbfb3f.jpg
+     ctx: [S750::SetFileIndex][S750::DoCommand] Start. ----------
+## SetFileOperation  (x3, first 23:12:14,812)
+   EC 73 01
+     ctx: [S750::SetFileIndex][S750::DoCommand] Start. ----------
+     ctx: [S750::SetFileIndex][S750::DoCommand] End. ----------
+     ctx: [S750::SetFileOperation][S750::DoCommand] Start. ----------
+## SetFileOperation  (x3, first 23:12:15,975)
+   EC 73 FF
+     ctx: [S750::WriteMediaFileToDevice] Out.
+     ctx: [S750::WriteFile2FW][6818] completeByte=2070; total=2070
+     ctx: [S750::SetFileOperation][S750::DoCommand] Start. ----------
+## SetFileOperation  (x1, first 23:21:01,089)
+   EC 73 03
+     ctx: [S750::SetFileIndex][S750::DoCommand] Start. ----------
+     ctx: [S750::SetFileIndex][S750::DoCommand] End. ----------
+     ctx: [S750::SetFileOperation][S750::DoCommand] Start. ----------
+## enableFileStreamTransfer  (x1, first 23:12:15,357)
+   EC 7F 02 16 08
+     ctx: [S750::WriteFile2FW] FILE_OPERATION_INIT.
+     ctx: [S750::OpenMediaFile] Path: C:\Program Files (x86)\ASUS\ArmouryDevice\view\externalFiles\aio\RYUJIN_III\8f95b7b8-5961-425e-a127-397459441676.gif, size: 2070
+     ctx: [S750::enableFileStreamTransfer][S750::DoCommand] Start. ----------
+## enableFileStreamTransfer  (x1, first 23:13:55,611)
+   EC 7F 02 25 07
+     ctx: [S750::WriteFile2FW] FILE_OPERATION_INIT.
+     ctx: [S750::OpenMediaFile] Path: C:\Program Files (x86)\ASUS\ArmouryDevice\view\externalFiles\aio\RYUJIN_III\b8fac637-52df-4401-8117-aebe14f9e1f7.jpg, size: 1829
+     ctx: [S750::enableFileStreamTransfer][S750::DoCommand] Start. ----------
+## enableFileStreamTransfer  (x1, first 23:14:22,394)
+   EC 7F 02 99 16
+     ctx: [S750::WriteFile2FW] FILE_OPERATION_INIT.
+     ctx: [S750::OpenMediaFile] Path: C:\Program Files (x86)\ASUS\ArmouryDevice\view\externalFiles\aio\RYUJIN_III\f944d54e-0558-4ca3-ac51-1ca403cbfb3f.jpg, size: 5785
+     ctx: [S750::enableFileStreamTransfer][S750::DoCommand] Start. ----------
+## GetFwVersion  (x3, first 22:44:45,568)
+   EC 82
+     ctx: [AacS750Function][addWarningJob] -Out-
+     ctx: [AacS750Function][getDeviceInfo] -In-
+     ctx: [S750::GetFwVersion][S750::DoCommand] Start. ----------
+## GetPumpSensorData  (x6, first 22:44:46,220)
+   EC 99
+     ctx: [AacS750Function][getPumpSensorData] -In-
+     ctx: [S750::GetPumpSensorData] In.
+     ctx: [S750::GetPumpSensorData][S750::DoCommand] Start. ----------
+## checkIsSupport  (x6, first 22:44:35,559)
+   EC D
+     ctx: [S750::Enumerate] Out.
+     ctx: [AacRogAIOFan][AacS750::Init()] -In-
+     ctx: [S750::checkIsSupport][S750::DoCommand] Start. ----------
+## GetDisplayStatus  (x74, first 22:44:35,320)
+   EC DC
+     ctx: [S750::initLCDEvent] Initialize LCD event done.(0)
+     ctx: [S750::GetDisplayStatus] In.
+     ctx: [S750::GetDisplayStatus][S750::DoCommand] Start. ----------
+## GetDiskInfo  (x3, first 23:12:14,424)
+   EC F1
+     ctx: [S750::UpdateDiskInfo][S750::DoCommand] End. ----------
+     ctx: [S750::UpdateDiskInfo] Event response: [EE 12 00 00 00 ...]
+     ctx: [S750::GetDiskInfo][S750::DoCommand] Start. ----------

@@ -1,0 +1,84 @@
+﻿2026-09-02 22:23:41.302  CAPTURE STARTED on \\.\USBPcap1 (USBPcapCMD pid 2804) -> C:\Claude\ryujin-capture\ryujin-full.pcap
+2026-09-02 22:23:41.307  Stopping ArmouryCrateService + LightingService + ROG Live Service, killing Armoury Crate processes
+2026-09-02 22:23:47.695  Starting LightingService
+2026-09-02 22:23:53.566  Starting ROG Live Service
+2026-09-02 22:23:58.844  Starting ArmouryCrateService
+2026-09-02 22:24:04.485  Launching Armoury Crate UI
+2026-09-02 22:24:07.505  capture file size now 11879918 bytes
+2026-09-02 22:24:46.034  UI: clicking Devices in the left nav
+2026-09-02 22:25:02.285  ACTION a: opening the ROG RYUJIN III device page
+2026-09-02 22:25:24.808  UI: 'Device Update' dialog on opening the cooler page -> clicking Update Later (declined)
+2026-09-02 22:27:38.178  ACTION a (retry): opening the ROG RYUJIN III device page
+2026-09-02 22:28:04.538  USER: accepted the Device Update themselves (device page component update in progress); Claude not touching the UI
+2026-09-02 22:29:40.007  USER: Ryujin III component update completed; user now updating the RTX 5090 component in Update Center. Claude idle.
+2026-09-02 22:30:48.438  USER: RTX 5090 update done, restart prompt deferred; Claude resumes UI driving
+2026-09-02 22:31:07.235  ACTION a: opening the ROG RYUJIN III device page (after component update)
+2026-09-02 22:33:04.973  CAPTURE STOPPED (run 1) before reboot. Contains: ASUS stack cold start, Update Center (Ryujin III component update to HAL 1.5.10.0 / page 4.01.39 at ~22:28), HAL background LCD driving (hardware monitor + warning player) 22:28-22:33, device page crashed with JS TypeError reading dims (GIF decoder). HAL 1.5.10.0 logs full HID byte dumps in AacAIOFanSetup log.
+2026-09-02 22:43:16.140  CAPTURE STOPPED (ryujin-full) (USBPcapCMD was already gone)
+2026-09-02 22:43:37.143  CAPTURE STARTED on \\.\USBPcap2 (USBPcapCMD pid 32272) -> C:\Claude\ryujin-capture\ryujin-lcd.pcap
+2026-09-02 22:43:37.147  Stopping ArmouryCrateService + LightingService + ROG Live Service, killing Armoury Crate processes
+2026-09-02 22:43:43.552  Starting LightingService
+2026-09-02 22:43:48.909  Starting ROG Live Service
+2026-09-02 22:43:54.187  Starting ArmouryCrateService
+2026-09-02 22:43:59.789  Launching Armoury Crate UI
+2026-09-02 22:44:02.814  capture file size now 12389987 bytes
+2026-09-02 22:45:51.192  a. page open: Display tab, mode=Customized Slideshow, custom slot 4 selected, duration 5s, brightness unknown
+2026-09-02 22:45:51.239  b. opening mode dropdown to pick Hardware Monitor
+2026-09-02 22:46:02.477  b. selecting Hardware Monitor in mode dropdown
+2026-09-02 22:46:19.235  b1. APPLY Hardware Monitor (1-sensor layout, duration 5s)
+2026-09-02 22:46:27.746  b2. selecting 3-sensor layout tile then APPLY
+2026-09-02 22:47:34.558  b3. opening Duration dropdown (5s -> 10s)
+2026-09-02 22:47:52.394  b3. selecting 10s duration then APPLY
+2026-09-02 22:48:02.233  c. opening gear (settings) panel for brightness
+2026-09-02 22:48:28.070  c. brightness 30 -> 100 (slider End key) then Save
+2026-09-02 22:49:10.761  c. brightness 100 -> 50 (LEFT x50) then Save
+2026-09-02 22:49:22.776  c. brightness 50 -> 30 (LEFT x20) then Save
+2026-09-02 22:49:56.705  c. CORRECTION: previous two saves were brightness 10 (slider step=10). now 10 -> 50 then Save
+2026-09-02 22:50:07.273  c. brightness 50 -> 30 then Save
+2026-09-02 22:50:46.887  c. brightness 50 -> 30 then Save (retry)
+2026-09-02 22:50:57.404  h. Standby Mode toggle ON -> OFF then Save
+2026-09-02 22:51:07.443  h. Standby Mode toggle OFF -> ON then Save
+2026-09-02 22:51:17.427  i. Temperature Warning ON -> OFF then Save
+2026-09-02 22:51:27.447  i. Temperature Warning OFF -> ON then Save
+2026-09-02 22:52:04.229  h2. standby Custom Animation: select slot-0 tile then Save
+2026-09-02 22:52:14.346  h2. standby Custom Animation: back to slot-4 tile then Save
+2026-09-02 22:52:22.022  e. switching mode to Customized Slideshow
+2026-09-02 22:52:45.162  e0. APPLY Customized Slideshow with existing slot-4 gif
+2026-09-02 22:52:53.558  e1. clicking + tile to upload media\red.jpg
+2026-09-02 22:53:50.157  e1. + added a default slideshow item; clicking the preview to find the upload control
+2026-09-02 22:55:46.046  e1. Animation > Upload file: media\rgbw-4frames.gif
+2026-09-02 22:56:38.266  e1. crop dialog Save -> upload rgbw-4frames.gif to device
+2026-09-02 23:02:22.940  SYSTEM: reinstalling AIOFanSDKPlugin 2.00.02 from InstallShield cache (SdkSetup.exe -s) because dll\AIOFanSDKPlugin (ResizeGifTool.exe) was missing and GIF upload hung
+2026-09-02 23:03:56.200  SYSTEM: SdkSetup -s removed AIOFanSDKPlugin reg keys + cache but did not reinstall (exit 238); restarting ROG Live Service + ArmouryCrateService + AC UI so RLS re-downloads profile 16374
+2026-09-02 23:05:23.382  SYSTEM: opening Devices > ROG RYUJIN III to trigger component check (plugin reinstall)
+2026-09-02 23:06:45.504  SYSTEM: pnputil /restart-device on the cooler to force ROG Live Service device-kit re-check (plugin reinstall)
+2026-09-02 23:08:59.161  SYSTEM: Update Center > Check for Updates
+2026-09-02 23:09:46.397  SYSTEM: Update Center > ROG RYUJIN III > Update (reinstall AIOFanSDKPlugin component)
+2026-09-02 23:11:00.000  SYSTEM: AIOFanSDKPlugin 2.00.02 reinstalled via Update Center; package URL https://dlcdn-rogboxbu2.asus.com/pub/ASUS/APService/Gaming/SYS/ROGS/16374-8BVQ72-ec82a10f6cb1552269a694a15764dbac.zip
+2026-09-02 23:12:01.289  e1. (retry) Animation > Upload file: media\rgbw-4frames.gif
+2026-09-02 23:12:13.002  e1. crop dialog Save -> upload rgbw-4frames.gif
+2026-09-02 23:13:06.847  e1. APPLY slideshow with uploaded rgbw-4frames.gif (device gif index 5)
+2026-09-02 23:13:17.247  e2. selecting Wallpaper radio (JPG uploads)
+2026-09-02 23:13:42.711  e2. Wallpaper > Upload file: media\red.jpg
+2026-09-02 23:13:54.124  e2. crop dialog Save -> upload red.jpg
+2026-09-02 23:14:09.514  e2. Wallpaper > Upload file: media\stripes.jpg
+2026-09-02 23:14:20.904  e2. crop dialog Save -> upload stripes.jpg
+2026-09-02 23:14:36.318  e2. APPLY slideshow after JPG uploads
+2026-09-02 23:15:45.060  g. banner text: typing ABC
+2026-09-02 23:15:48.795  g. APPLY with banner text ABC
+2026-09-02 23:16:00.837  g. clearing banner text
+2026-09-02 23:16:04.315  g. APPLY with banner text cleared
+2026-09-02 23:16:54.950  g. APPLY with banner text ABC (retry, top-layout Apply)
+2026-09-02 23:17:07.779  g. clearing banner text
+2026-09-02 23:17:11.892  g. APPLY with banner text cleared
+2026-09-02 23:18:34.808  g. clearing banner text (retry)
+2026-09-02 23:18:57.644  f. clicking red.jpg custom wallpaper tile to find delete control
+2026-09-02 23:19:24.214  g. APPLY: wallpaper red.jpg selected, banner text cleared
+2026-09-02 23:19:37.883  f. DELETE red.jpg custom wallpaper (X on tile)
+2026-09-02 23:20:16.684  f. DELETE red.jpg custom wallpaper (X on tile) retry
+2026-09-02 23:21:00.641  f. Delete File dialog -> OK
+2026-09-02 23:21:44.286  extra: selecting Time (clock) radio then APPLY
+2026-09-02 23:21:59.152  j. restoring mode Hardware Monitor then APPLY (brightness already 30)
+2026-09-02 23:22:47.060  j. duration back to 5s then APPLY (final state: Hardware Monitor, brightness 30, standby on, warning on)
+2026-09-02 23:23:00.220  ACTIONS DONE
+2026-09-02 23:23:15.391  CAPTURE STOPPED (ryujin-lcd)

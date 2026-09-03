@@ -1,0 +1,952 @@
+22:44:35,320 W GetDisplayStatus             EC DC
+22:44:35,542 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:44:35,559 W checkIsSupport               EC D
+22:44:35,682 R checkIsSupport               EC 50 00 01 30 10 01 04 01
+22:44:40,693 W GetDisplayStatus             EC DC
+22:44:40,910 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:44:40,930 W setSlideshowList             EC 5D 00 01 10 01 04 05
+22:44:41,050 R setSlideshowList             EC 5D
+22:44:41,069 W playMedia                    EC 51 10 01 04
+22:44:41,097 R playMedia                    EC 51
+22:44:43,602 W GetDisplayStatus             EC DC
+22:44:43,819 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:44:43,837 W checkIsSupport               EC D
+22:44:43,959 R checkIsSupport               EC 50 00 01 30 10 01 04 01
+22:44:44,955 W GetDisplayStatus             EC DC
+22:44:45,172 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:44:45,192 W setSlideshowList             EC 5D 00 01 10 01 04 05
+22:44:45,312 R setSlideshowList             EC 5D
+22:44:45,331 W playMedia                    EC 51 10 01 04
+22:44:45,358 R playMedia                    EC 51
+22:44:45,568 W GetFwVersion                 EC 82
+22:44:45,592 R GetFwVersion                 EC 02 00 41 55 52 4A 32 2D 53 37 35 30 2D 30 31 30 38
+22:44:45,614 W GetDisplayStatus             EC DC
+22:44:45,839 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:44:46,220 W GetPumpSensorData            EC 99
+22:44:46,337 R GetPumpSensorData            EC 19 00 00 00 25 03 90 06 26 66 03
+22:44:46,361 W GetDisplayStatus             EC DC
+22:44:46,585 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:44:46,616 W GetDisplayStatus             EC DC
+22:44:46,834 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:44:46,857 W GetDisplayStatus             EC DC
+22:44:47,083 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:44:47,204 W GetPumpSensorData            EC 99
+22:44:47,332 R GetPumpSensorData            EC 19 00 00 00 25 03 90 06 26 84 03
+22:44:47,358 W GetDisplayStatus             EC DC
+22:44:47,579 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:46:36,517 W GetDisplayStatus             EC DC
+22:46:36,739 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:46:36,757 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:46:36,988 R SetDisplayStatus             EC 5C
+22:46:37,022 W GetDisplayStatus             EC DC
+22:46:37,238 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:46:37,335 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:46:37,455 R setHWmonitorLayout           EC 52
+22:46:37,473 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:46:37,502 R setHWmonitorString           EC 53
+22:46:37,520 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 30 36 36 E2 86 8A
+22:46:37,548 R setHWmonitorString           EC 53
+22:46:37,566 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 36 E2 86 8C
+22:46:37,595 R setHWmonitorString           EC 53
+22:46:37,612 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:46:37,736 R setHWmonitorLayout           EC 52
+22:46:37,753 W setOledDisplayMode           EC 51 21
+22:46:37,782 R setOledDisplayMode           EC 51
+22:46:42,861 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:46:42,980 R setHWmonitorLayout           EC 52
+22:46:42,997 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:46:43,027 R setHWmonitorString           EC 53
+22:46:43,044 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:46:43,167 R setHWmonitorLayout           EC 52
+22:46:48,281 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:46:48,400 R setHWmonitorLayout           EC 52
+22:46:48,417 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:46:48,446 R setHWmonitorString           EC 53
+22:46:48,464 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+22:46:48,493 R setHWmonitorString           EC 53
+22:46:48,511 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 33 E2 86 8C
+22:46:48,540 R setHWmonitorString           EC 53
+22:46:48,557 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:46:48,679 R setHWmonitorLayout           EC 52
+22:46:53,782 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:46:53,910 R setHWmonitorLayout           EC 52
+22:46:53,927 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:46:53,957 R setHWmonitorString           EC 53
+22:46:53,973 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:46:54,096 R setHWmonitorLayout           EC 52
+22:46:59,431 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:46:59,549 R setHWmonitorLayout           EC 52
+22:46:59,567 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:46:59,596 R setHWmonitorString           EC 53
+22:46:59,614 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+22:46:59,643 R setHWmonitorString           EC 53
+22:46:59,661 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 37 E2 86 8C
+22:46:59,690 R setHWmonitorString           EC 53
+22:46:59,707 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:46:59,830 R setHWmonitorLayout           EC 52
+22:47:05,151 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:05,272 R setHWmonitorLayout           EC 52
+22:47:05,290 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:47:05,319 R setHWmonitorString           EC 53
+22:47:05,337 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:05,460 R setHWmonitorLayout           EC 52
+22:47:10,818 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:10,937 R setHWmonitorLayout           EC 52
+22:47:10,955 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 35 2E 30 E2 84 83
+22:47:10,984 R setHWmonitorString           EC 53
+22:47:11,001 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 31 39 E2 86 8A
+22:47:11,030 R setHWmonitorString           EC 53
+22:47:11,048 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 36 33 E2 86 8C
+22:47:11,077 R setHWmonitorString           EC 53
+22:47:11,095 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:11,218 R setHWmonitorLayout           EC 52
+22:47:16,535 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:16,656 R setHWmonitorLayout           EC 52
+22:47:16,673 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 35 2E 30 E2 84 83
+22:47:16,702 R setHWmonitorString           EC 53
+22:47:16,719 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:16,841 R setHWmonitorLayout           EC 52
+22:47:22,214 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:22,339 R setHWmonitorLayout           EC 52
+22:47:22,355 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:47:22,385 R setHWmonitorString           EC 53
+22:47:22,402 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+22:47:22,431 R setHWmonitorString           EC 53
+22:47:22,449 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 33 E2 86 8C
+22:47:22,478 R setHWmonitorString           EC 53
+22:47:22,495 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:22,618 R setHWmonitorLayout           EC 52
+22:47:27,930 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:28,052 R setHWmonitorLayout           EC 52
+22:47:28,069 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:47:28,100 R setHWmonitorString           EC 53
+22:47:28,117 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:28,238 R setHWmonitorLayout           EC 52
+22:47:33,327 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:33,443 R setHWmonitorLayout           EC 52
+22:47:33,461 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:47:33,490 R setHWmonitorString           EC 53
+22:47:33,508 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 30 31 E2 86 8A
+22:47:33,537 R setHWmonitorString           EC 53
+22:47:33,554 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 37 E2 86 8C
+22:47:33,584 R setHWmonitorString           EC 53
+22:47:33,600 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:33,725 R setHWmonitorLayout           EC 52
+22:47:38,819 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:38,945 R setHWmonitorLayout           EC 52
+22:47:38,962 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:47:38,991 R setHWmonitorString           EC 53
+22:47:39,009 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:39,130 R setHWmonitorLayout           EC 52
+22:47:44,238 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:44,365 R setHWmonitorLayout           EC 52
+22:47:44,382 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:47:44,410 R setHWmonitorString           EC 53
+22:47:44,428 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+22:47:44,457 R setHWmonitorString           EC 53
+22:47:44,474 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 37 E2 86 8C
+22:47:44,504 R setHWmonitorString           EC 53
+22:47:44,521 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:44,643 R setHWmonitorLayout           EC 52
+22:47:49,759 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:49,877 R setHWmonitorLayout           EC 52
+22:47:49,894 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:47:49,924 R setHWmonitorString           EC 53
+22:47:49,942 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:50,063 R setHWmonitorLayout           EC 52
+22:47:55,187 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:47:55,313 R setHWmonitorLayout           EC 52
+22:47:55,331 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:47:55,360 R setHWmonitorString           EC 53
+22:47:55,377 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 31 39 E2 86 8A
+22:47:55,406 R setHWmonitorString           EC 53
+22:47:55,424 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 35 E2 86 8C
+22:47:55,453 R setHWmonitorString           EC 53
+22:47:55,470 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:47:55,594 R setHWmonitorLayout           EC 52
+22:48:00,673 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:00,795 R setHWmonitorLayout           EC 52
+22:48:00,812 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:48:00,841 R setHWmonitorString           EC 53
+22:48:00,858 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:00,980 R setHWmonitorLayout           EC 52
+22:48:06,110 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:06,227 R setHWmonitorLayout           EC 52
+22:48:06,244 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:48:06,274 R setHWmonitorString           EC 53
+22:48:06,293 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+22:48:06,321 R setHWmonitorString           EC 53
+22:48:06,338 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 35 E2 86 8C
+22:48:06,368 R setHWmonitorString           EC 53
+22:48:06,386 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:06,509 R setHWmonitorLayout           EC 52
+22:48:11,842 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:11,969 R setHWmonitorLayout           EC 52
+22:48:11,985 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:48:12,015 R setHWmonitorString           EC 53
+22:48:12,032 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:12,155 R setHWmonitorLayout           EC 52
+22:48:17,470 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:17,592 R setHWmonitorLayout           EC 52
+22:48:17,609 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:48:17,639 R setHWmonitorString           EC 53
+22:48:17,656 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+22:48:17,685 R setHWmonitorString           EC 53
+22:48:17,703 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 34 E2 86 8C
+22:48:17,732 R setHWmonitorString           EC 53
+22:48:17,749 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:17,873 R setHWmonitorLayout           EC 52
+22:48:23,202 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:23,323 R setHWmonitorLayout           EC 52
+22:48:23,340 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:48:23,369 R setHWmonitorString           EC 53
+22:48:23,388 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:23,510 R setHWmonitorLayout           EC 52
+22:48:28,815 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:28,936 R setHWmonitorLayout           EC 52
+22:48:28,953 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:48:28,983 R setHWmonitorString           EC 53
+22:48:29,000 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 31 30 E2 86 8A
+22:48:29,030 R setHWmonitorString           EC 53
+22:48:29,047 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 33 E2 86 8C
+22:48:29,077 R setHWmonitorString           EC 53
+22:48:29,094 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:29,216 R setHWmonitorLayout           EC 52
+22:48:30,125 W GetDisplayStatus             EC DC
+22:48:30,348 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:48:30,366 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:48:30,582 R SetDisplayStatus             EC 5C
+22:48:30,603 W GetDisplayStatus             EC DC
+22:48:30,831 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:48:30,849 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 64 10 01 04
+22:48:31,080 R SetDisplayStatus             EC 5C
+22:48:34,304 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:34,435 R setHWmonitorLayout           EC 52
+22:48:34,453 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:48:34,482 R setHWmonitorString           EC 53
+22:48:34,499 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:34,621 R setHWmonitorLayout           EC 52
+22:48:39,737 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:39,863 R setHWmonitorLayout           EC 52
+22:48:39,880 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:48:39,910 R setHWmonitorString           EC 53
+22:48:39,927 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+22:48:39,956 R setHWmonitorString           EC 53
+22:48:39,974 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 34 E2 86 8C
+22:48:40,002 R setHWmonitorString           EC 53
+22:48:40,020 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:40,143 R setHWmonitorLayout           EC 52
+22:48:45,221 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:45,341 R setHWmonitorLayout           EC 52
+22:48:45,358 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:48:45,388 R setHWmonitorString           EC 53
+22:48:45,405 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:45,527 R setHWmonitorLayout           EC 52
+22:48:50,678 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:50,800 R setHWmonitorLayout           EC 52
+22:48:50,817 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:48:50,847 R setHWmonitorString           EC 53
+22:48:50,864 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+22:48:50,893 R setHWmonitorString           EC 53
+22:48:50,910 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 34 E2 86 8C
+22:48:50,939 R setHWmonitorString           EC 53
+22:48:50,957 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:51,079 R setHWmonitorLayout           EC 52
+22:48:56,155 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:48:56,274 R setHWmonitorLayout           EC 52
+22:48:56,292 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:48:56,321 R setHWmonitorString           EC 53
+22:48:56,338 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:48:56,461 R setHWmonitorLayout           EC 52
+22:49:01,583 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:01,709 R setHWmonitorLayout           EC 52
+22:49:01,726 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:49:01,755 R setHWmonitorString           EC 53
+22:49:01,772 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 31 39 E2 86 8A
+22:49:01,802 R setHWmonitorString           EC 53
+22:49:01,819 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 33 E2 86 8C
+22:49:01,848 R setHWmonitorString           EC 53
+22:49:01,866 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:01,987 R setHWmonitorLayout           EC 52
+22:49:07,079 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:07,202 R setHWmonitorLayout           EC 52
+22:49:07,218 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:49:07,248 R setHWmonitorString           EC 53
+22:49:07,265 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:07,388 R setHWmonitorLayout           EC 52
+22:49:12,488 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:12,617 R setHWmonitorLayout           EC 52
+22:49:12,634 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:49:12,663 R setHWmonitorString           EC 53
+22:49:12,681 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+22:49:12,711 R setHWmonitorString           EC 53
+22:49:12,729 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 34 E2 86 8C
+22:49:12,758 R setHWmonitorString           EC 53
+22:49:12,775 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:12,897 R setHWmonitorLayout           EC 52
+22:49:14,349 W GetDisplayStatus             EC DC
+22:49:14,573 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 64 10 01 04
+22:49:14,591 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 64 10 01 04
+22:49:14,820 R SetDisplayStatus             EC 5C
+22:49:14,841 W GetDisplayStatus             EC DC
+22:49:15,070 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 64 10 01 04
+22:49:15,088 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 0A 10 01 04
+22:49:15,319 R SetDisplayStatus             EC 5C
+22:49:17,999 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:18,117 R setHWmonitorLayout           EC 52
+22:49:18,135 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:49:18,164 R setHWmonitorString           EC 53
+22:49:18,182 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:18,305 R setHWmonitorLayout           EC 52
+22:49:23,422 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:23,551 R setHWmonitorLayout           EC 52
+22:49:23,568 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:49:23,597 R setHWmonitorString           EC 53
+22:49:23,614 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+22:49:23,643 R setHWmonitorString           EC 53
+22:49:23,661 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 34 E2 86 8C
+22:49:23,690 R setHWmonitorString           EC 53
+22:49:23,707 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:23,829 R setHWmonitorLayout           EC 52
+22:49:25,318 W GetDisplayStatus             EC DC
+22:49:25,539 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 0A 10 01 04
+22:49:25,557 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 0A 10 01 04
+22:49:25,788 R SetDisplayStatus             EC 5C
+22:49:25,808 W GetDisplayStatus             EC DC
+22:49:26,036 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 0A 10 01 04
+22:49:26,054 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 0A 10 01 04
+22:49:26,285 R SetDisplayStatus             EC 5C
+22:49:28,901 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:29,022 R setHWmonitorLayout           EC 52
+22:49:29,040 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:49:29,069 R setHWmonitorString           EC 53
+22:49:29,085 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:29,208 R setHWmonitorLayout           EC 52
+22:49:34,332 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:34,462 R setHWmonitorLayout           EC 52
+22:49:34,478 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:49:34,508 R setHWmonitorString           EC 53
+22:49:34,526 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+22:49:34,555 R setHWmonitorString           EC 53
+22:49:34,572 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 37 E2 86 8C
+22:49:34,601 R setHWmonitorString           EC 53
+22:49:34,619 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:34,741 R setHWmonitorLayout           EC 52
+22:49:39,819 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:39,938 R setHWmonitorLayout           EC 52
+22:49:39,955 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:49:39,984 R setHWmonitorString           EC 53
+22:49:40,001 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:40,124 R setHWmonitorLayout           EC 52
+22:49:45,223 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:45,345 R setHWmonitorLayout           EC 52
+22:49:45,363 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 35 2E 30 E2 84 83
+22:49:45,392 R setHWmonitorString           EC 53
+22:49:45,409 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+22:49:45,438 R setHWmonitorString           EC 53
+22:49:45,455 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 35 34 E2 86 8C
+22:49:45,485 R setHWmonitorString           EC 53
+22:49:45,502 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:45,625 R setHWmonitorLayout           EC 52
+22:49:50,735 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:50,855 R setHWmonitorLayout           EC 52
+22:49:50,872 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:49:50,901 R setHWmonitorString           EC 53
+22:49:50,919 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:51,041 R setHWmonitorLayout           EC 52
+22:49:56,125 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:49:56,249 R setHWmonitorLayout           EC 52
+22:49:56,267 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:49:56,296 R setHWmonitorString           EC 53
+22:49:56,314 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+22:49:56,343 R setHWmonitorString           EC 53
+22:49:56,361 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 33 E2 86 8C
+22:49:56,390 R setHWmonitorString           EC 53
+22:49:56,407 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:49:56,530 R setHWmonitorLayout           EC 52
+22:49:58,857 W GetDisplayStatus             EC DC
+22:49:59,082 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 0A 10 01 04
+22:49:59,100 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 0A 10 01 04
+22:49:59,330 R SetDisplayStatus             EC 5C
+22:49:59,352 W GetDisplayStatus             EC DC
+22:49:59,579 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 0A 10 01 04
+22:49:59,597 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 32 10 01 04
+22:49:59,827 R SetDisplayStatus             EC 5C
+22:50:01,610 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:01,741 R setHWmonitorLayout           EC 52
+22:50:01,759 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:01,788 R setHWmonitorString           EC 53
+22:50:01,805 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:01,928 R setHWmonitorLayout           EC 52
+22:50:07,052 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:07,180 R setHWmonitorLayout           EC 52
+22:50:07,197 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:07,226 R setHWmonitorString           EC 53
+22:50:07,244 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+22:50:07,273 R setHWmonitorString           EC 53
+22:50:07,290 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 35 E2 86 8C
+22:50:07,320 R setHWmonitorString           EC 53
+22:50:07,337 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:07,460 R setHWmonitorLayout           EC 52
+22:50:09,253 W GetDisplayStatus             EC DC
+22:50:09,478 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 32 10 01 04
+22:50:09,496 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 32 10 01 04
+22:50:09,727 R SetDisplayStatus             EC 5C
+22:50:09,748 W GetDisplayStatus             EC DC
+22:50:09,976 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 32 10 01 04
+22:50:09,994 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 32 10 01 04
+22:50:10,225 R SetDisplayStatus             EC 5C
+22:50:12,801 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:12,929 R setHWmonitorLayout           EC 52
+22:50:12,947 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:12,976 R setHWmonitorString           EC 53
+22:50:12,993 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:13,116 R setHWmonitorLayout           EC 52
+22:50:18,440 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:18,562 R setHWmonitorLayout           EC 52
+22:50:18,579 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:18,609 R setHWmonitorString           EC 53
+22:50:18,627 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+22:50:18,656 R setHWmonitorString           EC 53
+22:50:18,674 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 33 E2 86 8C
+22:50:18,702 R setHWmonitorString           EC 53
+22:50:18,719 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:18,842 R setHWmonitorLayout           EC 52
+22:50:24,174 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:24,296 R setHWmonitorLayout           EC 52
+22:50:24,313 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:24,343 R setHWmonitorString           EC 53
+22:50:24,360 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:24,483 R setHWmonitorLayout           EC 52
+22:50:29,804 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:29,925 R setHWmonitorLayout           EC 52
+22:50:29,942 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:29,972 R setHWmonitorString           EC 53
+22:50:29,990 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 36 33 E2 86 8A
+22:50:30,019 R setHWmonitorString           EC 53
+22:50:30,036 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 32 E2 86 8C
+22:50:30,065 R setHWmonitorString           EC 53
+22:50:30,082 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:30,204 R setHWmonitorLayout           EC 52
+22:50:35,531 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:35,658 R setHWmonitorLayout           EC 52
+22:50:35,675 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:35,704 R setHWmonitorString           EC 53
+22:50:35,721 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:35,844 R setHWmonitorLayout           EC 52
+22:50:40,966 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:41,087 R setHWmonitorLayout           EC 52
+22:50:41,105 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:41,134 R setHWmonitorString           EC 53
+22:50:41,152 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 31 39 E2 86 8A
+22:50:41,180 R setHWmonitorString           EC 53
+22:50:41,197 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 36 E2 86 8C
+22:50:41,227 R setHWmonitorString           EC 53
+22:50:41,245 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:41,367 R setHWmonitorLayout           EC 52
+22:50:46,465 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:46,587 R setHWmonitorLayout           EC 52
+22:50:46,604 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:50:46,633 R setHWmonitorString           EC 53
+22:50:46,651 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:46,774 R setHWmonitorLayout           EC 52
+22:50:48,988 W GetDisplayStatus             EC DC
+22:50:49,211 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 32 10 01 04
+22:50:49,229 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 32 10 01 04
+22:50:49,459 R SetDisplayStatus             EC 5C
+22:50:49,480 W GetDisplayStatus             EC DC
+22:50:49,707 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 32 10 01 04
+22:50:49,725 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:50:49,954 R SetDisplayStatus             EC 5C
+22:50:52,113 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:52,235 R setHWmonitorLayout           EC 52
+22:50:52,252 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:52,282 R setHWmonitorString           EC 53
+22:50:52,300 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 34 36 E2 86 8A
+22:50:52,329 R setHWmonitorString           EC 53
+22:50:52,346 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 34 E2 86 8C
+22:50:52,376 R setHWmonitorString           EC 53
+22:50:52,393 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:52,516 R setHWmonitorLayout           EC 52
+22:50:57,906 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:50:58,025 R setHWmonitorLayout           EC 52
+22:50:58,043 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:50:58,072 R setHWmonitorString           EC 53
+22:50:58,089 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:50:58,213 R setHWmonitorLayout           EC 52
+22:50:59,027 W GetDisplayStatus             EC DC
+22:50:59,250 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:50:59,269 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:50:59,499 R SetDisplayStatus             EC 5C
+22:50:59,520 W GetDisplayStatus             EC DC
+22:50:59,746 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:50:59,763 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 00 00 01 04
+22:50:59,993 R SetDisplayStatus             EC 5C
+22:51:03,341 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:03,459 R setHWmonitorLayout           EC 52
+22:51:03,477 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:51:03,506 R setHWmonitorString           EC 53
+22:51:03,523 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 34 36 E2 86 8A
+22:51:03,553 R setHWmonitorString           EC 53
+22:51:03,570 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 33 E2 86 8C
+22:51:03,599 R setHWmonitorString           EC 53
+22:51:03,616 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:03,739 R setHWmonitorLayout           EC 52
+22:51:08,814 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:08,934 R setHWmonitorLayout           EC 52
+22:51:08,952 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 34 2E 30 E2 84 83
+22:51:08,980 R setHWmonitorString           EC 53
+22:51:08,998 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:09,120 R setHWmonitorLayout           EC 52
+22:51:09,137 W GetDisplayStatus             EC DC
+22:51:09,367 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 00 00 01 04
+22:51:09,386 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 00 10 01 04
+22:51:09,616 R SetDisplayStatus             EC 5C
+22:51:09,636 W GetDisplayStatus             EC DC
+22:51:09,865 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 00 10 01 04
+22:51:09,883 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:51:10,114 R SetDisplayStatus             EC 5C
+22:51:14,472 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:14,603 R setHWmonitorLayout           EC 52
+22:51:14,620 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:51:14,650 R setHWmonitorString           EC 53
+22:51:14,667 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 31 39 E2 86 8A
+22:51:14,696 R setHWmonitorString           EC 53
+22:51:14,713 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 34 E2 86 8C
+22:51:14,742 R setHWmonitorString           EC 53
+22:51:14,759 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:14,881 R setHWmonitorLayout           EC 52
+22:51:19,035 W GetDisplayStatus             EC DC
+22:51:19,260 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:51:19,278 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:51:19,508 R SetDisplayStatus             EC 5C
+22:51:19,529 W GetDisplayStatus             EC DC
+22:51:19,756 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:51:19,775 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:51:20,007 R SetDisplayStatus             EC 5C
+22:51:20,197 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:20,317 R setHWmonitorLayout           EC 52
+22:51:20,335 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:51:20,364 R setHWmonitorString           EC 53
+22:51:20,381 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:20,504 R setHWmonitorLayout           EC 52
+22:51:25,629 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:25,753 R setHWmonitorLayout           EC 52
+22:51:25,770 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:51:25,799 R setHWmonitorString           EC 53
+22:51:25,817 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 32 38 E2 86 8A
+22:51:25,845 R setHWmonitorString           EC 53
+22:51:25,863 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 32 E2 86 8C
+22:51:25,893 R setHWmonitorString           EC 53
+22:51:25,909 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:26,032 R setHWmonitorLayout           EC 52
+22:51:29,025 W GetDisplayStatus             EC DC
+22:51:29,249 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:51:29,267 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:51:29,495 R SetDisplayStatus             EC 5C
+22:51:29,516 W GetDisplayStatus             EC DC
+22:51:29,742 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:51:29,760 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:51:29,990 R SetDisplayStatus             EC 5C
+22:51:31,122 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:31,247 R setHWmonitorLayout           EC 52
+22:51:31,264 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:51:31,293 R setHWmonitorString           EC 53
+22:51:31,311 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:31,433 R setHWmonitorLayout           EC 52
+22:51:36,760 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:36,882 R setHWmonitorLayout           EC 52
+22:51:36,899 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:51:36,928 R setHWmonitorString           EC 53
+22:51:36,946 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 34 36 E2 86 8A
+22:51:36,975 R setHWmonitorString           EC 53
+22:51:36,992 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 36 E2 86 8C
+22:51:37,021 R setHWmonitorString           EC 53
+22:51:37,038 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:37,161 R setHWmonitorLayout           EC 52
+22:51:42,243 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:42,363 R setHWmonitorLayout           EC 52
+22:51:42,380 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:51:42,410 R setHWmonitorString           EC 53
+22:51:42,427 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:42,549 R setHWmonitorLayout           EC 52
+22:51:47,658 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:47,784 R setHWmonitorLayout           EC 52
+22:51:47,801 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 34 2E 30 E2 84 83
+22:51:47,830 R setHWmonitorString           EC 53
+22:51:47,848 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+22:51:47,876 R setHWmonitorString           EC 53
+22:51:47,894 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 38 E2 86 8C
+22:51:47,922 R setHWmonitorString           EC 53
+22:51:47,939 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:48,063 R setHWmonitorLayout           EC 52
+22:51:53,134 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:53,253 R setHWmonitorLayout           EC 52
+22:51:53,271 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:51:53,300 R setHWmonitorString           EC 53
+22:51:53,317 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:53,440 R setHWmonitorLayout           EC 52
+22:51:58,528 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:51:58,651 R setHWmonitorLayout           EC 52
+22:51:58,669 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:51:58,698 R setHWmonitorString           EC 53
+22:51:58,716 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 34 36 E2 86 8A
+22:51:58,745 R setHWmonitorString           EC 53
+22:51:58,762 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 30 34 E2 86 8C
+22:51:58,791 R setHWmonitorString           EC 53
+22:51:58,809 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:51:58,931 R setHWmonitorLayout           EC 52
+22:52:04,235 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:52:04,358 R setHWmonitorLayout           EC 52
+22:52:04,375 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:52:04,404 R setHWmonitorString           EC 53
+22:52:04,423 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:52:04,543 R setHWmonitorLayout           EC 52
+22:52:05,948 W GetDisplayStatus             EC DC
+22:52:06,170 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:52:06,188 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 00 00 1E 10 01
+22:52:06,419 R SetDisplayStatus             EC 5C
+22:52:06,440 W GetDisplayStatus             EC DC
+22:52:06,668 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 00 00 1E 10 01
+22:52:06,686 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 00 00 1E 10 01
+22:52:06,916 R SetDisplayStatus             EC 5C
+22:52:09,636 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:52:09,754 R setHWmonitorLayout           EC 52
+22:52:09,771 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 34 2E 30 E2 84 83
+22:52:09,801 R setHWmonitorString           EC 53
+22:52:09,818 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 34 36 E2 86 8A
+22:52:09,846 R setHWmonitorString           EC 53
+22:52:09,864 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 33 38 E2 86 8C
+22:52:09,893 R setHWmonitorString           EC 53
+22:52:09,910 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:52:10,032 R setHWmonitorLayout           EC 52
+22:52:15,142 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:52:15,263 R setHWmonitorLayout           EC 52
+22:52:15,281 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:52:15,310 R setHWmonitorString           EC 53
+22:52:15,327 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:52:15,450 R setHWmonitorLayout           EC 52
+22:52:15,928 W GetDisplayStatus             EC DC
+22:52:16,152 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 00 00 1E 10 01
+22:52:16,169 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:52:16,398 R SetDisplayStatus             EC 5C
+22:52:16,419 W GetDisplayStatus             EC DC
+22:52:16,646 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:52:16,664 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:52:16,895 R SetDisplayStatus             EC 5C
+22:52:20,752 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:52:20,873 R setHWmonitorLayout           EC 52
+22:52:20,890 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:52:20,919 R setHWmonitorString           EC 53
+22:52:20,937 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 31 39 E2 86 8A
+22:52:20,965 R setHWmonitorString           EC 53
+22:52:20,983 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 31 30 E2 86 8C
+22:52:21,012 R setHWmonitorString           EC 53
+22:52:21,029 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:52:21,152 R setHWmonitorLayout           EC 52
+22:52:26,262 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:52:26,388 R setHWmonitorLayout           EC 52
+22:52:26,405 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:52:26,434 R setHWmonitorString           EC 53
+22:52:26,451 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:52:26,574 R setHWmonitorLayout           EC 52
+22:52:31,700 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:52:31,819 R setHWmonitorLayout           EC 52
+22:52:31,836 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:52:31,866 R setHWmonitorString           EC 53
+22:52:31,884 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 33 37 E2 86 8A
+22:52:31,913 R setHWmonitorString           EC 53
+22:52:31,931 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 37 E2 86 8C
+22:52:31,960 R setHWmonitorString           EC 53
+22:52:31,977 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:52:32,098 R setHWmonitorLayout           EC 52
+22:52:37,170 W setHWmonitorLayout           EC 52 82 02 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:52:37,286 R setHWmonitorLayout           EC 52
+22:52:37,304 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 33 2E 30 E2 84 83
+22:52:37,334 R setHWmonitorString           EC 53
+22:52:37,351 W setHWmonitorLayout           EC 52 02 00 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:52:37,473 R setHWmonitorLayout           EC 52
+22:52:42,608 W setHWmonitorLayout           EC 52 82 00 02 02 00 00 00 00 FF FF FF 00 FF FF FF 00 FF FF FF
+22:52:42,737 R setHWmonitorLayout           EC 52
+22:52:42,754 W setHWmonitorString           EC 53 00 43 50 55 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 34 32 2E 30 E2 84 83
+22:52:42,784 R setHWmonitorString           EC 53
+22:52:42,802 W setHWmonitorString           EC 53 01 43 50 55 20 56 6F 6C 74 2E 00 00 00 00 00 00 00 00 00 31 2E 31 30 31 E2 86 8A
+22:52:42,830 R setHWmonitorString           EC 53
+22:52:42,848 W setHWmonitorString           EC 53 02 43 50 55 20 46 61 6E 20 53 70 65 65 64 00 00 00 00 00 37 32 33 E2 86 8C
+22:52:42,877 R setHWmonitorString           EC 53
+22:52:42,895 W setHWmonitorLayout           EC 52 02 02 02 02 00 00 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+22:52:43,018 R setHWmonitorLayout           EC 52
+22:52:45,468 W GetDisplayStatus             EC DC
+22:52:45,693 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:52:45,712 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:52:45,942 R SetDisplayStatus             EC 5C
+22:52:45,970 W GetDisplayStatus             EC DC
+22:52:46,191 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+22:52:46,211 W setSlideshowList             EC 5D 00 01 10 01 04 05
+22:52:46,330 R setSlideshowList             EC 5D
+22:52:46,349 W playMedia                    EC 51 10 01 04
+22:52:46,377 R playMedia                    EC 51
+23:05:27,844 W GetDisplayStatus             EC DC
+23:05:28,064 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:05:28,082 W checkIsSupport               EC D
+23:05:28,204 R checkIsSupport               EC 50 00 01 30 10 01 04 01
+23:05:37,599 W GetDisplayStatus             EC DC
+23:05:37,820 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:05:37,841 W setSlideshowList             EC 5D 00 01 10 01 04 05
+23:05:37,960 R setSlideshowList             EC 5D
+23:05:37,978 W playMedia                    EC 51 10 01 04
+23:05:38,006 R playMedia                    EC 51
+23:05:39,516 W GetDisplayStatus             EC DC
+23:05:39,744 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:05:39,762 W checkIsSupport               EC D
+23:05:39,885 R checkIsSupport               EC 50 00 01 30 10 01 04 01
+23:05:41,024 W GetDisplayStatus             EC DC
+23:05:41,241 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:05:41,261 W setSlideshowList             EC 5D 00 01 10 01 04 05
+23:05:41,380 R setSlideshowList             EC 5D
+23:05:41,399 W playMedia                    EC 51 10 01 04
+23:05:41,426 R playMedia                    EC 51
+23:05:41,636 W GetFwVersion                 EC 82
+23:05:41,660 R GetFwVersion                 EC 02 00 41 55 52 4A 32 2D 53 37 35 30 2D 30 31 30 38
+23:05:41,682 W GetDisplayStatus             EC DC
+23:05:41,908 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:05:42,302 W GetPumpSensorData            EC 99
+23:05:42,422 R GetPumpSensorData            EC 19 00 00 00 25 06 AE 06 27 66 03
+23:05:42,448 W GetDisplayStatus             EC DC
+23:05:42,671 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:05:42,702 W GetDisplayStatus             EC DC
+23:05:42,920 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:05:42,944 W GetDisplayStatus             EC DC
+23:05:43,167 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:05:43,287 W GetPumpSensorData            EC 99
+23:05:43,414 R GetPumpSensorData            EC 19 00 00 00 25 05 AE 06 27 84 03
+23:05:43,440 W GetDisplayStatus             EC DC
+23:05:43,664 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:10:08,587 W GetDisplayStatus             EC DC
+23:10:08,811 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:10:08,828 W checkIsSupport               EC D
+23:10:08,950 R checkIsSupport               EC 50 00 01 30 10 01 04 01
+23:10:14,047 W GetDisplayStatus             EC DC
+23:10:14,272 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:10:14,291 W setSlideshowList             EC 5D 00 01 10 01 04 05
+23:10:14,413 R setSlideshowList             EC 5D
+23:10:14,432 W playMedia                    EC 51 10 01 04
+23:10:14,459 R playMedia                    EC 51
+23:10:16,857 W GetDisplayStatus             EC DC
+23:10:17,073 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:10:17,091 W checkIsSupport               EC D
+23:10:17,213 R checkIsSupport               EC 50 00 01 30 10 01 04 01
+23:10:18,193 W GetDisplayStatus             EC DC
+23:10:18,424 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:10:18,444 W setSlideshowList             EC 5D 00 01 10 01 04 05
+23:10:18,564 R setSlideshowList             EC 5D
+23:10:18,582 W playMedia                    EC 51 10 01 04
+23:10:18,610 R playMedia                    EC 51
+23:10:18,852 W GetFwVersion                 EC 82
+23:10:18,874 R GetFwVersion                 EC 02 00 41 55 52 4A 32 2D 53 37 35 30 2D 30 31 30 38
+23:10:18,897 W GetDisplayStatus             EC DC
+23:10:19,126 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:10:19,249 W GetPumpSensorData            EC 99
+23:10:19,374 R GetPumpSensorData            EC 19 00 00 00 25 04 90 06 26 66 03
+23:10:19,400 W GetDisplayStatus             EC DC
+23:10:19,623 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:10:19,653 W GetDisplayStatus             EC DC
+23:10:19,873 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:11:26,230 W GetDisplayStatus             EC DC
+23:11:26,447 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:11:26,816 W GetPumpSensorData            EC 99
+23:11:26,946 R GetPumpSensorData            EC 19 00 00 00 25 03 90 06 26 66 03
+23:11:26,972 W GetDisplayStatus             EC DC
+23:11:27,194 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:12:14,373 W UpdateDiskInfo               EC 71 01 01
+23:12:14,407 R UpdateDiskInfo               EC 71
+23:12:14,424 W GetDiskInfo                  EC F1
+23:12:14,454 R GetDiskInfo                  EC 71 00 01 A8 7E 00 00 78 55 00 00 10 00 00 00 00 10 00 00 00 00 10 1F
+23:12:14,674 W SetFileIndex                 EC 72 01 02 05
+23:12:14,796 R SetFileIndex                 EC 72
+23:12:14,812 W SetFileOperation             EC 73 01
+23:12:15,339 R SetFileOperation             EC 73
+23:12:15,357 W enableFileStreamTransfer     EC 7F 02 16 08
+23:12:15,882 R enableFileStreamTransfer     EC 7F 00 00 1
+23:12:15,975 W SetFileOperation             EC 73 FF
+23:12:16,502 R SetFileOperation             EC 73
+23:13:07,155 W GetDisplayStatus             EC DC
+23:13:07,376 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:13:07,394 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:13:07,625 R SetDisplayStatus             EC 5C
+23:13:07,654 W GetDisplayStatus             EC DC
+23:13:07,872 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:13:07,891 W setSlideshowList             EC 5D 00 01 10 01 05 05
+23:13:08,011 R setSlideshowList             EC 5D
+23:13:08,030 W playMedia                    EC 51 10 01 05
+23:13:08,058 R playMedia                    EC 51
+23:13:54,629 W UpdateDiskInfo               EC 71 01 01
+23:13:54,658 R UpdateDiskInfo               EC 71
+23:13:54,675 W GetDiskInfo                  EC F1
+23:13:54,705 R GetDiskInfo                  EC 71 00 01 A8 7E 00 00 70 55 00 00 10 00 00 00 00 10 00 00 00 00 10 3F
+23:13:54,922 W SetFileIndex                 EC 72 01 01
+23:13:55,046 R SetFileIndex                 EC 72
+23:13:55,062 W SetFileOperation             EC 73 01
+23:13:55,590 R SetFileOperation             EC 73
+23:13:55,611 W enableFileStreamTransfer     EC 7F 02 25 07
+23:13:56,131 R enableFileStreamTransfer     EC 7F 00 00 1
+23:13:56,225 W SetFileOperation             EC 73 FF
+23:13:56,753 R SetFileOperation             EC 73
+23:14:21,416 W UpdateDiskInfo               EC 71 01 01
+23:14:21,442 R UpdateDiskInfo               EC 71
+23:14:21,459 W GetDiskInfo                  EC F1
+23:14:21,488 R GetDiskInfo                  EC 71 00 01 A8 7E 00 00 68 55 00 00 10 00 00 00 00 10 01 00 00 00 10 3F
+23:14:21,707 W SetFileIndex                 EC 72 01 01 01
+23:14:21,830 R SetFileIndex                 EC 72
+23:14:21,846 W SetFileOperation             EC 73 01
+23:14:22,372 R SetFileOperation             EC 73
+23:14:22,394 W enableFileStreamTransfer     EC 7F 02 99 16
+23:14:22,916 R enableFileStreamTransfer     EC 7F 00 00 1
+23:14:23,086 W SetFileOperation             EC 73 FF
+23:14:23,614 R SetFileOperation             EC 73
+23:14:36,572 W GetDisplayStatus             EC DC
+23:14:36,795 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:14:36,813 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:14:37,044 R SetDisplayStatus             EC 5C
+23:14:37,076 W GetDisplayStatus             EC DC
+23:14:37,293 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:14:37,316 W GetDisplayStatus             EC DC
+23:14:37,540 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:14:37,558 W setSlideshowBannerBG         EC 60 00 01 10 01
+23:14:37,588 R setSlideshowBannerBG         EC 6
+23:14:37,605 W setSlideshowBannerText       EC 60 00 02 00 03 00 FF FF FF FF 08 00 17
+23:14:37,636 R setSlideshowBannerText       EC 6
+23:14:37,652 W setSlideshowBannerText       EC 60 00 02 01 03 00 FF FF FF FF 08 00 3F
+23:14:37,682 R setSlideshowBannerText       EC 6
+23:14:37,699 W setSlideshowBannerText       EC 60 00 02 02 03 00 FF FF FF FF 08 00 67
+23:14:37,728 R setSlideshowBannerText       EC 6
+23:14:37,746 W setSlideshowBannerText       EC 60 00 02 03 03 00 FF FF FF FF 08 00 8F
+23:14:37,776 R setSlideshowBannerText       EC 6
+23:14:37,793 W setSlideshowBannerText       EC 60 00 02 04 03 00 FF FF FF FF 08 00 B7
+23:14:37,822 R setSlideshowBannerText       EC 6
+23:14:37,839 W setSlideshowBannerText       EC 60 00 02 05 03 00 FF FF FF FF 08 00 DF
+23:14:37,869 R setSlideshowBannerText       EC 6
+23:14:37,886 W setSlideshowList             EC 5D 00 01 04 00 01 05
+23:14:38,009 R setSlideshowList             EC 5D
+23:14:38,027 W setOledDisplayMode           EC 51 1F
+23:14:38,056 R setOledDisplayMode           EC 51
+23:16:55,257 W GetDisplayStatus             EC DC
+23:16:55,480 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:16:55,498 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:16:55,728 R SetDisplayStatus             EC 5C
+23:16:55,760 W GetDisplayStatus             EC DC
+23:16:55,991 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:16:56,015 W GetDisplayStatus             EC DC
+23:16:56,240 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:16:56,258 W setSlideshowBannerBG         EC 60 00 01 10 01
+23:16:56,286 R setSlideshowBannerBG         EC 6
+23:16:56,303 W setSlideshowBannerText       EC 60 00 02 00 03 00 FF FF FF FF 08 00 17 00 41 42 43
+23:16:56,333 R setSlideshowBannerText       EC 6
+23:16:56,350 W setSlideshowBannerText       EC 60 00 02 01 03 00 FF FF FF FF 08 00 3F
+23:16:56,380 R setSlideshowBannerText       EC 6
+23:16:56,397 W setSlideshowBannerText       EC 60 00 02 02 03 00 FF FF FF FF 08 00 67
+23:16:56,427 R setSlideshowBannerText       EC 6
+23:16:56,444 W setSlideshowBannerText       EC 60 00 02 03 03 00 FF FF FF FF 08 00 8F
+23:16:56,473 R setSlideshowBannerText       EC 6
+23:16:56,490 W setSlideshowBannerText       EC 60 00 02 04 03 00 FF FF FF FF 08 00 B7
+23:16:56,520 R setSlideshowBannerText       EC 6
+23:16:56,537 W setSlideshowBannerText       EC 60 00 02 05 03 00 FF FF FF FF 08 00 DF
+23:16:56,567 R setSlideshowBannerText       EC 6
+23:16:56,583 W setSlideshowList             EC 5D 00 01 04 00 01 05
+23:16:56,706 R setSlideshowList             EC 5D
+23:16:56,724 W setOledDisplayMode           EC 51 1F
+23:16:56,752 R setOledDisplayMode           EC 51
+23:17:12,134 W GetDisplayStatus             EC DC
+23:17:12,356 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:17:12,375 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:17:12,605 R SetDisplayStatus             EC 5C
+23:17:12,634 W GetDisplayStatus             EC DC
+23:17:12,853 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:17:12,876 W GetDisplayStatus             EC DC
+23:17:13,101 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:17:13,118 W setSlideshowBannerBG         EC 60 00 01 10 01
+23:17:13,148 R setSlideshowBannerBG         EC 6
+23:17:13,166 W setSlideshowBannerText       EC 60 00 02 00 03 00 FF FF FF FF 08 00 17 00 41 42 43
+23:17:13,195 R setSlideshowBannerText       EC 6
+23:17:13,212 W setSlideshowBannerText       EC 60 00 02 01 03 00 FF FF FF FF 08 00 3F
+23:17:13,241 R setSlideshowBannerText       EC 6
+23:17:13,258 W setSlideshowBannerText       EC 60 00 02 02 03 00 FF FF FF FF 08 00 67
+23:17:13,288 R setSlideshowBannerText       EC 6
+23:17:13,305 W setSlideshowBannerText       EC 60 00 02 03 03 00 FF FF FF FF 08 00 8F
+23:17:13,335 R setSlideshowBannerText       EC 6
+23:17:13,351 W setSlideshowBannerText       EC 60 00 02 04 03 00 FF FF FF FF 08 00 B7
+23:17:13,381 R setSlideshowBannerText       EC 6
+23:17:13,399 W setSlideshowBannerText       EC 60 00 02 05 03 00 FF FF FF FF 08 00 DF
+23:17:13,428 R setSlideshowBannerText       EC 6
+23:17:13,445 W setSlideshowList             EC 5D 00 01 04 00 01 05
+23:17:13,569 R setSlideshowList             EC 5D
+23:17:13,587 W setOledDisplayMode           EC 51 1F
+23:17:13,616 R setOledDisplayMode           EC 51
+23:19:24,517 W GetDisplayStatus             EC DC
+23:19:24,741 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:19:24,758 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:19:24,989 R SetDisplayStatus             EC 5C
+23:19:25,021 W GetDisplayStatus             EC DC
+23:19:25,238 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:19:25,261 W GetDisplayStatus             EC DC
+23:19:25,487 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:19:25,505 W setSlideshowBannerBG         EC 60 00 01 1
+23:19:25,534 R setSlideshowBannerBG         EC 6
+23:19:25,551 W setSlideshowBannerText       EC 60 00 02 00 03 00 FF FF FF FF 08 00 17
+23:19:25,580 R setSlideshowBannerText       EC 6
+23:19:25,596 W setSlideshowBannerText       EC 60 00 02 01 03 00 FF FF FF FF 08 00 3F
+23:19:25,626 R setSlideshowBannerText       EC 6
+23:19:25,643 W setSlideshowBannerText       EC 60 00 02 02 03 00 FF FF FF FF 08 00 67
+23:19:25,673 R setSlideshowBannerText       EC 6
+23:19:25,690 W setSlideshowBannerText       EC 60 00 02 03 03 00 FF FF FF FF 08 00 8F
+23:19:25,719 R setSlideshowBannerText       EC 6
+23:19:25,736 W setSlideshowBannerText       EC 60 00 02 04 03 00 FF FF FF FF 08 00 B7
+23:19:25,766 R setSlideshowBannerText       EC 6
+23:19:25,783 W setSlideshowBannerText       EC 60 00 02 05 03 00 FF FF FF FF 08 00 DF
+23:19:25,813 R setSlideshowBannerText       EC 6
+23:19:25,830 W setSlideshowList             EC 5D 00 01 04 00 00 05
+23:19:25,952 R setSlideshowList             EC 5D
+23:19:25,971 W setOledDisplayMode           EC 51 1F
+23:19:25,999 R setOledDisplayMode           EC 51
+23:21:00,944 W SetFileIndex                 EC 72 01 01
+23:21:01,072 R SetFileIndex                 EC 72
+23:21:01,089 W SetFileOperation             EC 73 03
+23:21:01,119 R SetFileOperation             EC 73
+23:21:01,151 W GetDisplayStatus             EC DC
+23:21:01,369 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:21:01,387 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:21:01,618 R SetDisplayStatus             EC 5C
+23:21:01,649 W GetDisplayStatus             EC DC
+23:21:01,866 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:21:01,889 W GetDisplayStatus             EC DC
+23:21:02,113 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:21:02,131 W setSlideshowBannerBG         EC 60 00 01
+23:21:02,159 R setSlideshowBannerBG         EC 6
+23:21:02,177 W setSlideshowBannerText       EC 60 00 02 00 03 00 FF FF FF FF 08 00 17
+23:21:02,206 R setSlideshowBannerText       EC 6
+23:21:02,223 W setSlideshowBannerText       EC 60 00 02 01 03 00 FF FF FF FF 08 00 3F
+23:21:02,253 R setSlideshowBannerText       EC 6
+23:21:02,270 W setSlideshowBannerText       EC 60 00 02 02 03 00 FF FF FF FF 08 00 67
+23:21:02,299 R setSlideshowBannerText       EC 6
+23:21:02,316 W setSlideshowBannerText       EC 60 00 02 03 03 00 FF FF FF FF 08 00 8F
+23:21:02,345 R setSlideshowBannerText       EC 6
+23:21:02,363 W setSlideshowBannerText       EC 60 00 02 04 03 00 FF FF FF FF 08 00 B7
+23:21:02,392 R setSlideshowBannerText       EC 6
+23:21:02,409 W setSlideshowBannerText       EC 60 00 02 05 03 00 FF FF FF FF 08 00 DF
+23:21:02,439 R setSlideshowBannerText       EC 6
+23:21:02,456 W setSlideshowList             EC 5D 00 01 04 00 00 05
+23:21:02,578 R setSlideshowList             EC 5D
+23:21:02,597 W setOledDisplayMode           EC 51 1F
+23:21:02,624 R setOledDisplayMode           EC 51
+23:21:48,995 W GetDisplayStatus             EC DC
+23:21:49,220 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:21:49,238 W SetDisplayStatus             EC 5C 01 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:21:49,467 R SetDisplayStatus             EC 5C
+23:21:49,497 W GetDisplayStatus             EC DC
+23:21:49,717 R GetDisplayStatus             EC 5C 00 00 64 00 00 64 10 01 04 00 1E 10 01 04
+23:21:49,737 W setClock                     EC 11 C6 09 02 03 01 11 21 49 01
+23:21:49,764 R setClock                     EC 11
+23:21:49,781 W setSlideshowList             EC 5D 00 01 08 00 01 05
+23:21:49,904 R setSlideshowList             EC 5D
+23:21:49,923 W playMedia                    EC 51 08 00 01
+23:21:49,950 R playMedia                    EC 51

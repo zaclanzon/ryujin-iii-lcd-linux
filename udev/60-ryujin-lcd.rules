@@ -1,0 +1,5 @@
+# ASUS ROG Ryujin III (0b05:1aa2): bin/ryujin-lcd drives the 3.5" LCD over the cooler's
+# hidraw node (interface 1, shared with the asus_rog_ryujin hwmon driver) and the raw USB
+# device node for the vendor bulk interface 0. Both are root-only by default.
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1aa2", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+KERNEL=="hidraw*", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1aa2", MODE="0660", GROUP="plugdev", TAG+="uaccess"

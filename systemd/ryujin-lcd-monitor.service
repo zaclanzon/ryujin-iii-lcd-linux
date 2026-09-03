@@ -1,0 +1,14 @@
+[Unit]
+Description=Ryujin III LCD hardware-monitor page from hwmon sensors
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/ryujin-lcd-monitor
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+SyslogIdentifier=ryujin-lcd-monitor
+
+[Install]
+WantedBy=default.target

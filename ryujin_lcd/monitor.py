@@ -1,0 +1,125 @@
+"""Keep the Ryujin III LCD's hardware-monitor page fed from hwmon sensors.
+
+  ryujin-lcd-monitor [--interval S] [--keepalive S] [LINE ...]
+
+Each LINE is LABEL=HWMON/SENSOR, up to three:
+  Coolant=rog_ryujin/temp1    Pump=rog_ryujin/fan1    CPU=k10temp/temp1
+HWMON is the driver name in /sys/class/hwmon/*/name (looked up on every read, so a
+re-enumerated device keeps working), SENSOR the attribute without _input. Units and
+formatting follow the attribute type: temp (°C, 1 decimal), fan (RPM), in (V, 3 decimals),
+power (W), curr (A), freq (MHz). Without LINE arguments the file
+~/.config/ryujin-lcd/monitor.conf is read (one LABEL=HWMON/SENSOR per line, # comments),
+falling back to the three defaults above.
+
+The page is only re-sent when a displayed value changes, plus a keepalive every
+--keepalive seconds, so the shared HID interface stays quiet for the hwmon driver.
+"""
+import argparse
+import glob
+import os
+import sys
+import time
+
+from .device import MODE_HWMON, Ryujin, RyujinError, add_unit_glyphs
+
+DEFAULT_LINES = ["Coolant=rog_ryujin/temp1", "Pump=rog_ryujin/fan1", "CPU=k10temp/temp1"]
+CONFIG = os.path.expanduser("~/.config/ryujin-lcd/monitor.conf")
+FORMATS = {   # attribute prefix -> (divisor, format, unit suffix understood by add_unit_glyphs)
+    "temp": (1000, "{:.1f}", "°C"),
+    "fan": (1, "{:.0f}", " RPM"),
+    "in": (1000, "{:.3f}", "V"),
+    "power": (1e6, "{:.1f}", "W"),
+    "curr": (1000, "{:.2f}", "A"),
+    "freq": (1e6, "{:.0f}", "MHz"),
+}
+
+
+def parse_line(spec):
+    label, _, sensor = spec.partition("=")
+    hw, _, attr = sensor.partition("/")
+    if not (label and hw and attr):
+        raise SystemExit(f"bad line {spec!r}: want LABEL=HWMON/SENSOR")
+    kind = attr.rstrip("0123456789")
+    if kind not in FORMATS:
+        raise SystemExit(f"{spec}: unknown sensor type {kind!r} (temp/fan/in/power/curr/freq)")
+    return label, hw, attr, FORMATS[kind]
+
+
+def hwmon_path(name):
+    for n in glob.glob("/sys/class/hwmon/hwmon*/name"):
+        try:
+            if open(n).read().strip() == name:
+                return os.path.dirname(n)
+        except OSError:
+            pass
+    return None
+
+
+def read_value(hw, attr, fmt):
+    path = hwmon_path(hw)
+    if path is None:
+        return "n/a"
+    try:
+        raw = int(open(os.path.join(path, attr + "_input")).read())
+    except (OSError, ValueError):
+        return "n/a"
+    div, pat, unit = fmt
+    return pat.format(raw / div) + unit
+
+
+def load_lines(args):
+    if args:
+        return args
+    if os.path.exists(CONFIG):
+        lines = [l.strip() for l in open(CONFIG) if l.strip() and not l.startswith("#")]
+        if lines:
+            return lines
+    return DEFAULT_LINES
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("lines", nargs="*", metavar="LABEL=HWMON/SENSOR")
+    ap.add_argument("--interval", type=float, default=2.0, help="seconds between sensor reads (2)")
+    ap.add_argument("--keepalive", type=float, default=60.0, help="re-send even if unchanged (60 s)")
+    ap.add_argument("--once", action="store_true", help="send one page and exit")
+    ap.add_argument("-v", "--verbose", action="store_true")
+    a = ap.parse_args()
+    specs = [parse_line(s) for s in load_lines(a.lines)][:3]
+    if not specs:
+        sys.exit("no lines")
+    print("lines:", ", ".join(f"{l}={h}/{s}" for l, h, s, _ in specs), flush=True)
+
+    dev, last, sent_at = None, None, 0.0
+    while True:
+        page = [(label, read_value(hw, attr, fmt)) for label, hw, attr, fmt in specs]
+        now = time.monotonic()
+        changed = page != last
+        if changed or now - sent_at >= a.keepalive:
+            try:
+                if dev is None:
+                    dev = Ryujin(a.verbose)
+                dev.hwmon([(l, add_unit_glyphs(v)) for l, v in page])
+                dev.mode(MODE_HWMON)
+                last, sent_at = page, now
+                if a.verbose or changed:
+                    print(time.strftime("%H:%M:%S"), " | ".join(f"{l} {v}" for l, v in page), flush=True)
+            except (RyujinError, OSError) as e:
+                print(f"{time.strftime('%H:%M:%S')} device error: {e}; retrying in 5 s", file=sys.stderr, flush=True)
+                if dev is not None:
+                    try:
+                        dev.close()
+                    except OSError:
+                        pass
+                dev, last = None, None
+                time.sleep(5)
+                continue
+        if a.once:
+            break
+        time.sleep(a.interval)
+    if dev is not None:
+        dev.close()
+
+
+if __name__ == "__main__":
+    main()
