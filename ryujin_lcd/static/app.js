@@ -241,7 +241,7 @@ function tileHTML(type, item, opts = {}) {
   else inner = `<span>no local copy</span>`;
   const name = item.used && item.cached ? `<div class="name">${esc(item.name || "")}${item.bytes ? ` <span class="hint">${fmtBytes(item.bytes)}</span>` : ""}</div>` : "";
   const x = item.used && opts.deletable ? `<button class="x" data-act="delete" title="Delete">✕</button>` : "";
-  const use = item.used && opts.library ? `<button class="btn primary small use" data-act="show"><span>Show now</span></button>` : "";
+  const use = item.used && opts.library ? `<div class="use"><button class="btn primary small" data-act="show"><span>Show now</span></button>${item.cached ? "" : `<button class="btn small" data-act="thumb">Set thumbnail</button>`}</div>` : "";
   return `<div class="${cls}" role="button" tabindex="0" data-type="${type}" data-slot="${item.slot}" data-key="${key}" data-used="${item.used ? 1 : 0}"><span class="slot">${type.toUpperCase()} ${item.slot}</span>${inner}${name}${x}${use}</div>`;
 }
 function slotItems(type) {
@@ -382,19 +382,19 @@ function noSignalText(ctx, text) {
 
 // ---- media: upload / delete / show ---------------------------------------------------
 let pending = null; // {type, slot, file, url, w, h, scale, base, x, y}
-function pickFile(type, slot) {
+function pickFile(type, slot, thumb = false) {
   const inp = $("#file-input");
   inp.accept = type === "gif" ? "image/gif" : "image/*";
-  inp.value = ""; inp.dataset.type = type; inp.dataset.slot = slot;
+  inp.value = ""; inp.dataset.type = type; inp.dataset.slot = slot; inp.dataset.thumb = thumb ? "1" : "";
   inp.click();
 }
 $("#file-input").addEventListener("change", (e) => {
   const file = e.target.files[0]; if (!file) return;
-  openCrop(e.target.dataset.type, +e.target.dataset.slot, file);
+  openCrop(e.target.dataset.type, +e.target.dataset.slot, file, e.target.dataset.thumb === "1");
 });
-function openCrop(type, slot, file) {
+function openCrop(type, slot, file, thumb = false) {
   const url = URL.createObjectURL(file), img = $("#crop-img");
-  pending = { type, slot, file, url, raw: false };
+  pending = { type, slot, file, url, raw: false, thumb };
   img.onload = () => {
     const stage = $("#crop-stage");
     const W = stage.clientWidth, H = Math.round(W * 3 / 4); stage.style.height = H + "px";
@@ -405,8 +405,9 @@ function openCrop(type, slot, file) {
     layoutCrop();
   };
   img.src = url;
-  $("#crop-title").textContent = `Crop · ${file.name}`;
-  $("#crop-target").textContent = `${type === "gif" ? "Animation" : "Wallpaper"} slot ${slot} · ${fmtBytes(file.size)}`;
+  $("#crop-title").textContent = `${thumb ? "Thumbnail" : "Crop"} · ${file.name}`;
+  $("#crop-target").textContent = `${type === "gif" ? "Animation" : "Wallpaper"} slot ${slot} · ${fmtBytes(file.size)}${thumb ? " · local copy only, the cooler keeps what it has" : ""}`;
+  $("#crop-save span").textContent = thumb ? "Save thumbnail" : "Save";
   $("#crop-modal").hidden = false;
 }
 function layoutCrop() {
@@ -443,18 +444,18 @@ function doUpload() {
   $("#crop-modal").hidden = true;
   busy(`Preparing ${p.file.name}…`, 0);
   xhr.upload.onprogress = (e) => { if (e.lengthComputable) busy(`Sending to host… ${Math.round(e.loaded / e.total * 100)}%`, e.loaded / e.total * 50); };
-  xhr.upload.onload = () => busy("Converting and writing to the cooler…", 75);
+  xhr.upload.onload = () => busy(p.thumb ? "Converting…" : "Converting and writing to the cooler…", 75);
   xhr.onload = async () => {
     let d = {}; try { d = JSON.parse(xhr.responseText); } catch (e) { /* ignore */ }
     if (xhr.status >= 200 && xhr.status < 300) {
-      toast(`Stored ${fmtBytes(d.bytes)} in ${p.type.toUpperCase()} slot ${p.slot} (${d.seconds}s).`);
+      toast(p.thumb ? `Thumbnail set for ${p.type.toUpperCase()} slot ${p.slot}.` : `Stored ${fmtBytes(d.bytes)} in ${p.type.toUpperCase()} slot ${p.slot} (${d.seconds}s).`);
       if (p.type === "gif" && state.form.slideshow.gif_slot == null) state.form.slideshow.gif_slot = p.slot;
       if (p.type === "jpg" && state.form.slideshow.jpg_slot == null) state.form.slideshow.jpg_slot = p.slot;
     } else toast(d.error || `upload failed (${xhr.status})`, "err", 7000);
     closeModals(); await loadStatus();
   };
   xhr.onerror = () => { toast("upload failed: network error", "err"); closeModals(); };
-  xhr.open("POST", "/api/upload?" + q.toString());
+  xhr.open("POST", (p.thumb ? "/api/thumbnail?" : "/api/upload?") + q.toString());
   xhr.send(p.file);
 }
 function busy(text, pct) { $("#busy-modal").hidden = false; $("#busy-text").textContent = text; $("#busy-bar").style.width = pct + "%"; }
@@ -489,6 +490,7 @@ function onTileClick(e, opts) {
   const type = tile.dataset.type, slot = +tile.dataset.slot, used = tile.dataset.used === "1";
   if (act && act.dataset.act === "delete") { e.stopPropagation(); return deleteMedia(type, slot); }
   if (act && act.dataset.act === "show") { e.stopPropagation(); return showNow(type, slot); }
+  if (act && act.dataset.act === "thumb") { e.stopPropagation(); return pickFile(type, slot, true); }
   if (!used) return pickFile(type, slot);
   opts.select(type, slot);
 }

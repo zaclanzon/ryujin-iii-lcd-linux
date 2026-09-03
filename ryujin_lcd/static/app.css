@@ -246,7 +246,7 @@ label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-
 .tile.add { align-content: center; }
 .tile.add .add-txt { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin-top: 8px; }
 .tile.unknown { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
-.tile .use { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0; transition: .15s; white-space: nowrap; }
+.tile .use { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0; transition: .15s; white-space: nowrap; display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .tile.library:hover .use { opacity: 1; }
 .banner-lines { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
 .banner-lines .text { width: 100%; }

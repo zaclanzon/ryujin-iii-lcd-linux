@@ -144,15 +144,24 @@ systemctl --user start ryujin-lcd-web
 sudo umount /mnt
 ```
 
-It prints one line per slot Armoury Crate knows and copies the file into
-`~/.local/share/ryujin-lcd/media` for slots the cooler lists as used; the panel
-shows them after its next storage refresh (the refresh button, or within a
-minute). Stop the web service or monitor service first: two programs on the
-HID interface at the same time can pick up each other's replies. Slots filled by the `ryujin-lcd` CLI are not in
-the Windows profile; re-upload those from the panel to get a thumbnail. Armoury Crate
-only ever uses slots 0-9, so a used slot above 9 always came from Linux. The original,
-unconverted files you picked in Armoury Crate are not kept by it; look in your own
-folders (Downloads, Pictures) if you want to upload them again at full quality.
+It prints one line per slot Armoury Crate knows, with size and frame count, and
+copies the file into `~/.local/share/ryujin-lcd/media` for slots the cooler lists
+as used; the panel shows them after its next storage refresh (the refresh button,
+or within a minute). Stop the web service or monitor service first: two programs
+on the HID interface at the same time can pick up each other's replies.
+
+Check the result against the LCD before trusting it. Armoury Crate never verifies
+its folder against the cooler, and the folder can go stale: after a device-page
+update it may lose the files and the profile keeps pointing at names that now
+hold something else (here: five 1 KB single-frame stand-ins where the cooler
+still had the real animations). Tiny single-frame GIFs in the listing are the
+sign. For any slot the importer got wrong, or that it does not know (slots filled
+by the `ryujin-lcd` CLI; Armoury Crate only uses 0-9, so a used slot above 9
+always came from Linux), use the Media page: *Show now* puts the slot on the LCD,
+*Set thumbnail* lets you pick the matching file, which is converted like an upload
+and kept as the local copy only; nothing is sent to the cooler. The original,
+unconverted files you picked in Armoury Crate are not kept by it; look in your
+own folders (Downloads, Pictures) for them.
 
 ## Protocol in one paragraph
 

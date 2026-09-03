@@ -26,6 +26,7 @@ page can be tried (and developed) on any machine.
   POST /api/hwmon                  {lines:[{label, sensor|value}], bg, fg, live, interval}
   POST /api/show                   {source: gif|jpg|clock, slot, duration, h24, banner}
   POST /api/upload?type=&slot=&name=&crop=x,y,w,h[&raw=1]   body = file
+  POST /api/thumbnail?type=&slot=&name=&crop=x,y,w,h         body = file; local copy only, nothing sent
   GET  /api/media/<type>/<slot>    cached 320x240 file (thumbnail)
   DELETE /api/media/<type>/<slot>
   POST /api/raw                    {hex: "DC"} -> {reply}
@@ -436,9 +437,20 @@ def import_windows(root, storage=None):
             note = "slot is empty on the device, skipped"
         else:
             save_media(ftype, slot, data, f"armoury-crate-{ftype}-{slot}.{EXT[ftype]}")
-            note = "local copy taken"
+            note = "local copy taken" + describe_image(data)
         out.append((ftype, slot, name, len(data), note))
     return out
+
+
+def describe_image(data):
+    """' (320x240, 13 frames)' - so a stale profile pointing at stand-in files shows up."""
+    try:
+        from PIL import Image
+        im = Image.open(io.BytesIO(data))
+        n = getattr(im, "n_frames", 1)
+        return f" ({im.width}x{im.height}, {n} frame{'s' if n != 1 else ''})"
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def merge(base, upd):
@@ -725,7 +737,7 @@ class App:
         self.set_config(mode="slideshow", slideshow=slide)
         return {"ok": True}
 
-    def upload(self, query, data):
+    def _prepare_upload(self, query, data):
         ftype = query.get("type", "")
         slot = check_slot(ftype, query.get("slot"))
         name = os.path.basename(query.get("name", f"upload.{EXT.get(ftype, 'bin')}"))[:80]
@@ -744,6 +756,24 @@ class App:
             out = prepare_bytes(data, ftype, crop)
         if not out.startswith(MAGIC[ftype]):
             raise ApiError(f"not a {ftype} file")
+        return ftype, slot, name, out
+
+    def thumbnail(self, query, data):
+        """A local copy for a slot that is used on the device but was filled elsewhere
+        (Armoury Crate, the CLI). Converted like an upload; nothing goes to the cooler."""
+        ftype, slot, name, out = self._prepare_upload(query, data)
+        if self.storage is None:
+            try:
+                self.read_storage()
+            except ApiError:
+                pass
+        if self.storage and slot not in self.storage[ftype]["used"]:
+            raise ApiError(f"{ftype} {slot} is empty on the device; upload into it instead")
+        save_media(ftype, slot, out, name)
+        return {"type": ftype, "slot": slot, "bytes": len(out), "thumbnail": True}
+
+    def upload(self, query, data):
+        ftype, slot, name, out = self._prepare_upload(query, data)
         t0 = time.monotonic()
 
         def go(dev):
@@ -867,6 +897,8 @@ class Handler(BaseHTTPRequestHandler):
             self.check_origin()
             if path == "/api/upload":
                 return self.send_json(self.app.upload(query, self.read_body()))
+            if path == "/api/thumbnail":
+                return self.send_json(self.app.thumbnail(query, self.read_body()))
             body = self.read_json()
             if path == "/api/display":
                 return self.send_json(self.app.display(body))
