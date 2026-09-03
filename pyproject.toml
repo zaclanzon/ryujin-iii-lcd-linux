@@ -17,6 +17,10 @@ images = ["Pillow"]
 [project.scripts]
 ryujin-lcd = "ryujin_lcd.cli:main"
 ryujin-lcd-monitor = "ryujin_lcd.monitor:main"
+ryujin-lcd-web = "ryujin_lcd.web:main"
 
 [tool.setuptools]
 packages = ["ryujin_lcd"]
+
+[tool.setuptools.package-data]
+ryujin_lcd = ["static/*"]

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install ryujin-lcd for the current user without touching the system Python:
 #   udev rule (sudo), package copy to ~/.local/lib/ryujin-lcd, wrappers in ~/.local/bin,
-#   and the optional monitor service (./install.sh --monitor).
+#   and the optional services (./install.sh --monitor, ./install.sh --web).
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB="$HOME/.local/lib/ryujin-lcd"; BIN="$HOME/.local/bin"
@@ -18,17 +18,22 @@ sudo udevadm trigger --action=add --subsystem-match=hidraw
 echo "==> package -> $LIB, wrappers -> $BIN"
 rm -rf "$LIB"; mkdir -p "$LIB" "$BIN"
 cp -r "$REPO/ryujin_lcd" "$LIB/"
-for cmd in cli:ryujin-lcd monitor:ryujin-lcd-monitor; do
+for cmd in cli:ryujin-lcd monitor:ryujin-lcd-monitor web:ryujin-lcd-web; do
   mod=${cmd%%:*}; name=${cmd#*:}
   printf '#!/bin/sh\nPYTHONPATH="%s${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m ryujin_lcd.%s "$@"\n' "$LIB" "$mod" > "$BIN/$name"
   chmod 755 "$BIN/$name"
 done
 
-if [ "${1:-}" = "--monitor" ]; then
-  echo "==> user service ryujin-lcd-monitor"
-  install -Dm644 "$REPO/systemd/ryujin-lcd-monitor.service" "$HOME/.config/systemd/user/ryujin-lcd-monitor.service"
+for arg in "$@"; do
+  case "$arg" in
+    --monitor) svc=ryujin-lcd-monitor ;;
+    --web) svc=ryujin-lcd-web ;;
+    *) echo "unknown option $arg (--monitor, --web)"; exit 2 ;;
+  esac
+  echo "==> user service $svc"
+  install -Dm644 "$REPO/systemd/$svc.service" "$HOME/.config/systemd/user/$svc.service"
   systemctl --user daemon-reload
-  systemctl --user enable --now ryujin-lcd-monitor.service
-  systemctl --user try-restart ryujin-lcd-monitor.service
-fi
-echo "done: ryujin-lcd info"
+  systemctl --user enable --now "$svc.service"
+  systemctl --user try-restart "$svc.service"
+done
+echo "done: ryujin-lcd info   |   ryujin-lcd-web -> http://127.0.0.1:8686/"

@@ -1,0 +1,798 @@
+"""Web control panel for the Ryujin III LCD, in the style of Armoury Crate.
+
+  ryujin-lcd-web [--host 127.0.0.1] [--port 8686] [--demo] [-v]
+
+Serves a single-page app (ryujin_lcd/static) and a JSON API from the Python standard
+library, no framework. Everything the CLI does is available: display mode (hardware
+monitor with live sensors, animation, wallpaper with banner text, clock), brightness,
+standby, media upload with crop, delete, storage, raw commands.
+
+All device access goes through one lock, so the page, the live hardware-monitor feed
+and an upload never interleave on the shared HID interface. Uploaded media are kept
+in ~/.local/share/ryujin-lcd/media so the page can show thumbnails (the device
+cannot read files back). The applied settings are saved in ~/.config/ryujin-lcd/web.json.
+
+--demo runs without the cooler: a simulated device with simulated sensors, so the
+page can be tried (and developed) on any machine.
+
+  GET  /api/status                 device, display, storage, monitor, saved config
+  GET  /api/sensors                hwmon sensors with current values
+  POST /api/display                {brightness, standby, anim_slot}
+  POST /api/hwmon                  {lines:[{label, sensor|value}], bg, fg, live, interval}
+  POST /api/show                   {source: gif|jpg|clock, slot, duration, h24, banner}
+  POST /api/upload?type=&slot=&name=&crop=x,y,w,h[&raw=1]   body = file
+  GET  /api/media/<type>/<slot>    cached 320x240 file (thumbnail)
+  DELETE /api/media/<type>/<slot>
+  POST /api/raw                    {hex: "DC"} -> {reply}
+  POST /api/monitor/stop
+"""
+import argparse
+import datetime
+import glob
+import io
+import json
+import math
+import mimetypes
+import os
+import struct
+import sys
+import threading
+import time
+import urllib.parse
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+from .device import (CMD, FTYPE, HEIGHT, KIND, MODE_HWMON, MODE_SLIDESHOW, MTYPE, REPLY_ID, WIDTH,
+                     Ryujin, RyujinError, add_unit_glyphs, fit, hexs, trim)
+from .monitor import FORMATS, hwmon_path, read_value
+from . import __version__
+
+STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+DATA_DIR = os.path.expanduser("~/.local/share/ryujin-lcd")
+CONFIG = os.path.expanduser("~/.config/ryujin-lcd/web.json")
+SLOTS = 16
+MAX_UPLOAD = 16 << 20
+EXT = {"gif": "gif", "jpg": "jpg"}
+MAGIC = {"gif": b"GIF8", "jpg": b"\xFF\xD8"}
+KIND_NAME = {0x10: "gif", 0x04: "jpg", 0x08: "clock", MODE_HWMON: "hwmon", MODE_SLIDESHOW: "slideshow"}
+
+DEFAULT_CONFIG = {
+    "mode": "hwmon",
+    "hwmon": {
+        "lines": [{"label": "Coolant", "sensor": "rog_ryujin/temp1"},
+                  {"label": "Pump", "sensor": "rog_ryujin/fan1"},
+                  {"label": "CPU", "sensor": "k10temp/temp1"}],
+        "count": 3, "bg": "000000", "fg": "FFFFFF", "live": True, "interval": 2,
+    },
+    "slideshow": {
+        "source": "gif", "gif_slot": None, "jpg_slot": None, "duration": 5, "h24": False,
+        "banner": {"lines": ["", "", "", "", "", ""], "color": "FFFFFFFF", "align": 0, "x": 8, "font": 3},
+    },
+}
+
+
+class ApiError(Exception):
+    def __init__(self, message, status=400):
+        super().__init__(message)
+        self.status = status
+
+
+# --- parsing of device replies ---------------------------------------------------
+def parse_display_status(st):
+    return {
+        "brightness": st[7], "brightness_ac": st[12],
+        "standby": bool(st[13]),
+        "anim_type": st[14], "anim_slot": st[15],
+        "media": {"kind": KIND_NAME.get(st[8], f"{st[8]:02X}"), "type": st[9], "slot": st[10]},
+        "raw": hexs(trim(st)),
+    }
+
+
+def parse_disk_info(d):
+    total, free = struct.unpack("<II", d[4:12])
+    out = {"total_kb": total, "free_kb": free, "raw": hexs(trim(d))}
+    for name, off in (("other", 12), ("jpg", 17), ("gif", 22)):
+        cap, bits = d[off], struct.unpack("<I", d[off + 1:off + 5])[0]
+        out[name] = {"capacity": cap, "used": [i for i in range(32) if bits >> i & 1]}
+    return out
+
+
+# --- demo device -------------------------------------------------------------------
+class DemoRyujin:
+    """Stands in for the cooler: the same methods as Ryujin, state kept in memory."""
+    path = "demo"
+
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+        self.st = bytearray(64)
+        self.st[0], self.st[1], self.st[4], self.st[7] = CMD, 0x5C, 100, 60
+        self.st[8], self.st[9], self.st[10], self.st[12] = 0x10, 0x01, 0x04, 60
+        self.st[13], self.st[14], self.st[15] = 0x10, 0x01, 0x04
+        self.slots = {"gif": {4}, "jpg": set()}
+        self.sizes = {("gif", 4): 24}
+        self.total = 32424
+        self.current = (MODE_HWMON, 0, 0)
+
+    def firmware(self):
+        return "AURJ2-S750-0108"
+
+    def display_status(self):
+        return bytearray(self.st)
+
+    def set_display_status(self, **fields):
+        idx = {"brightness": 7, "standby": 13, "anim_type": 14, "anim_slot": 15}
+        for k, v in fields.items():
+            if v is not None:
+                self.st[idx[k]] = v
+        if fields.get("brightness") is not None:
+            self.st[12] = fields["brightness"]
+        return self.display_status()
+
+    def disk_info(self):
+        d = bytearray(64)
+        d[0], d[1], d[3] = CMD, 0x71, 0x01
+        free = self.total - sum(self.sizes.values())
+        d[4:12] = struct.pack("<II", self.total, free)
+        for name, off in (("other", 12), ("jpg", 17), ("gif", 22)):
+            d[off] = 0x10
+            bits = sum(1 << s for s in self.slots.get(name, ()))
+            d[off + 1:off + 5] = struct.pack("<I", bits)
+        return d
+
+    def upload(self, data, ftype, slot):
+        for _ in range(0, len(data), 4096):
+            time.sleep(0.03)
+        self.slots[ftype].add(slot)
+        self.sizes[(ftype, slot)] = max(8, -(-len(data) // 1024))
+
+    def delete(self, ftype, slot):
+        self.slots[ftype].discard(slot)
+        self.sizes.pop((ftype, slot), None)
+
+    def slideshow_list(self, entries, duration):
+        pass
+
+    def play(self, kind, slot):
+        self.current = (KIND[kind], MTYPE[kind], slot)
+        self.st[8], self.st[9], self.st[10] = self.current
+
+    def mode(self, m):
+        self.current = (m, 0, 0)
+
+    def set_clock(self, now=None, h24=False):
+        pass
+
+    def hwmon(self, lines, layout=0, next_layout=None, bg=(0, 0, 0), fg=(255, 255, 255)):
+        pass
+
+    def hwmon_update(self, lines):
+        pass
+
+    def current_item(self):
+        return self.current
+
+    def banner(self, kind, slot, lines, font=3, align=0, color=(255, 255, 255, 255), duration=5, x=8):
+        self.current = (MODE_SLIDESHOW, 0, slot)
+        self.st[8], self.st[9], self.st[10] = KIND["jpg"], MTYPE["jpg"], slot
+
+    def cmd(self, payload, timeout=3.0):
+        payload = bytes(payload)
+        if payload[0] == 0xDC:
+            return bytes(self.st)
+        if payload[0] == 0xF1:
+            return bytes(self.disk_info())
+        if payload[0] == 0x82:
+            return bytes([CMD, 0x02, 0x00]) + b"AURJ2-S750-0108" + bytes(46)
+        if payload[0] == 0xD0:
+            return bytes([CMD, 0x50, 0x00, 0x01, 0x30, *self.current, 0x01]) + bytes(55)
+        return bytes([CMD, REPLY_ID.get(payload[0], payload[0])]) + bytes(62)
+
+    def close(self):
+        pass
+
+
+# --- sensors -------------------------------------------------------------------
+DEMO_SENSORS = [   # id, label, base value (in hwmon raw units), swing
+    ("rog_ryujin/temp1", "Coolant", 34500, 2500),
+    ("rog_ryujin/fan1", "Pump", 1980, 120),
+    ("rog_ryujin/fan2", "Radiator fans", 1240, 300),
+    ("k10temp/temp1", "Tctl", 52000, 9000),
+    ("k10temp/temp3", "Tccd1", 49000, 7000),
+    ("nvme/temp1", "Composite", 41000, 2000),
+    ("amdgpu/temp1", "edge", 47000, 8000),
+    ("amdgpu/power1", "PPT", 118e6, 60e6),
+    ("amdgpu/freq1", "sclk", 1850e6, 500e6),
+    ("asus/in0", "Vcore", 1066, 120),
+]
+T0 = time.monotonic()
+
+
+def demo_value(sid, swing_scale=1.0):
+    for i, (s, _, base, swing) in enumerate(DEMO_SENSORS):
+        if s == sid:
+            t = time.monotonic() - T0
+            return base + swing * swing_scale * math.sin(t / (7 + i * 1.3) + i)
+    return None
+
+
+class Sensors:
+    def __init__(self, demo):
+        self.demo = demo
+
+    def real(self):
+        out = []
+        for d in sorted(glob.glob("/sys/class/hwmon/hwmon*")):
+            try:
+                name = open(os.path.join(d, "name")).read().strip()
+            except OSError:
+                continue
+            for inp in sorted(glob.glob(os.path.join(d, "*_input"))):
+                attr = os.path.basename(inp)[:-6]
+                kind = attr.rstrip("0123456789")
+                if kind not in FORMATS:
+                    continue
+                label = attr
+                try:
+                    label = open(os.path.join(d, attr + "_label")).read().strip() or attr
+                except OSError:
+                    pass
+                out.append({"id": f"{name}/{attr}", "hwmon": name, "attr": attr, "label": label, "kind": kind})
+        return out
+
+    def list(self):
+        items = self.real()
+        if self.demo:
+            have = {i["id"] for i in items}
+            for sid, label, _, _ in DEMO_SENSORS:
+                if sid not in have:
+                    hw, attr = sid.split("/")
+                    items.append({"id": sid, "hwmon": hw, "attr": attr, "label": label,
+                                  "kind": attr.rstrip("0123456789"), "demo": True})
+        for it in items:
+            it["value"] = self.read(it["hwmon"], it["attr"])
+        return items
+
+    def read(self, hw, attr):
+        kind = attr.rstrip("0123456789")
+        fmt = FORMATS.get(kind)
+        if fmt is None:
+            return "n/a"
+        v = read_value(hw, attr, fmt)
+        if v == "n/a" and self.demo:
+            raw = demo_value(f"{hw}/{attr}")
+            if raw is not None:
+                div, pat, unit = fmt
+                return pat.format(raw / div) + unit
+        return v
+
+
+# --- device access -------------------------------------------------------------------
+class Device:
+    """Opens the cooler on first use, serializes all access, drops it on error."""
+
+    def __init__(self, demo=False, verbose=False):
+        self.demo, self.verbose = demo, verbose
+        self.lock = threading.RLock()
+        self.dev = None
+        self.error = None
+
+    def run(self, fn):
+        with self.lock:
+            try:
+                if self.dev is None:
+                    self.dev = DemoRyujin(self.verbose) if self.demo else Ryujin(self.verbose)
+                r = fn(self.dev)
+                self.error = None
+                return r
+            except (RyujinError, OSError) as e:
+                self.error = str(e)
+                self.drop()
+                raise ApiError(str(e), 503)
+
+    def drop(self):
+        if self.dev is not None:
+            try:
+                self.dev.close()
+            except OSError:
+                pass
+            self.dev = None
+
+
+class LiveMonitor(threading.Thread):
+    """Feeds the hardware-monitor page from sensors, like ryujin-lcd-monitor, in-process."""
+
+    def __init__(self, device, sensors, lines, bg, fg, interval=2.0, keepalive=60.0):
+        super().__init__(daemon=True, name="ryujin-live-monitor")
+        self.device, self.sensors = device, sensors
+        self.lines = [(l["label"], *l["sensor"].split("/", 1)) for l in lines]
+        self.bg, self.fg = bg, fg
+        self.interval, self.keepalive = max(0.5, float(interval)), keepalive
+        self.stop_event = threading.Event()
+        self.last = None
+        self.error = None
+
+    def page(self):
+        return [(label, add_unit_glyphs(self.sensors.read(hw, attr))) for label, hw, attr in self.lines]
+
+    def run(self):
+        checked_at, sent = 0.0, None
+        while not self.stop_event.is_set():
+            page = self.page()
+            now = time.monotonic()
+            try:
+                if sent is None or now - checked_at >= self.keepalive:
+                    def full(dev):
+                        if sent is None or dev.current_item()[0] != MODE_HWMON:
+                            dev.hwmon(page, 0, None, self.bg, self.fg)
+                            dev.mode(MODE_HWMON)
+                        elif page != sent:
+                            dev.hwmon_update(page)
+                    self.device.run(full)
+                    checked_at = now
+                elif page != sent:
+                    self.device.run(lambda dev: dev.hwmon_update(page))
+                sent, self.last, self.error = page, page, None
+            except ApiError as e:
+                self.error = str(e)
+                sent = None
+                self.stop_event.wait(5)
+                continue
+            self.stop_event.wait(self.interval)
+
+    def stop(self):
+        self.stop_event.set()
+
+
+# --- media cache and config -------------------------------------------------------------
+def media_path(ftype, slot):
+    return os.path.join(DATA_DIR, "media", f"{ftype}-{slot}.{EXT[ftype]}")
+
+
+def media_meta(ftype, slot):
+    try:
+        return json.load(open(media_path(ftype, slot) + ".json"))
+    except (OSError, ValueError):
+        return None
+
+
+def save_media(ftype, slot, data, name):
+    os.makedirs(os.path.join(DATA_DIR, "media"), exist_ok=True)
+    p = media_path(ftype, slot)
+    with open(p, "wb") as f:
+        f.write(data)
+    json.dump({"name": name, "bytes": len(data), "time": time.time()}, open(p + ".json", "w"))
+
+
+def forget_media(ftype, slot):
+    for p in (media_path(ftype, slot), media_path(ftype, slot) + ".json"):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+
+
+def merge(base, upd):
+    out = dict(base)
+    for k, v in upd.items():
+        out[k] = merge(base[k], v) if isinstance(v, dict) and isinstance(base.get(k), dict) else v
+    return out
+
+
+def load_config():
+    try:
+        return merge(DEFAULT_CONFIG, json.load(open(CONFIG)))
+    except (OSError, ValueError):
+        return json.loads(json.dumps(DEFAULT_CONFIG))
+
+
+def save_config(cfg):
+    os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
+    tmp = CONFIG + ".tmp"
+    json.dump(cfg, open(tmp, "w"), indent=2)
+    os.replace(tmp, CONFIG)
+
+
+def prepare_bytes(data, ftype, crop=None):
+    """Crop (source pixels, optional), center-fit to 320x240, re-encode. Needs Pillow."""
+    try:
+        from PIL import Image, ImageSequence
+    except ImportError:
+        raise ApiError("Pillow is not installed (sudo apt install python3-pil); only raw 320x240 files can be sent", 501)
+    try:
+        im = Image.open(io.BytesIO(data))
+    except Exception as e:  # noqa: BLE001 - Pillow raises many types
+        raise ApiError(f"cannot decode image: {e}")
+
+    def prep(fr):
+        fr = fr.convert("RGB")
+        if crop:
+            x, y, w, h = crop
+            box = (max(0, int(round(x))), max(0, int(round(y))),
+                   min(fr.width, int(round(x + w))), min(fr.height, int(round(y + h))))
+            if box[2] - box[0] >= 2 and box[3] - box[1] >= 2:
+                fr = fr.crop(box)
+        return fit(fr)
+
+    out = io.BytesIO()
+    if ftype == "jpg":
+        prep(im).save(out, "JPEG", quality=90)
+    else:
+        frames, durations = [], []
+        for fr in ImageSequence.Iterator(im):
+            frames.append(prep(fr).quantize(256, dither=Image.Dither.NONE))
+            durations.append(fr.info.get("duration", 100))
+        frames[0].save(out, "GIF", save_all=True, append_images=frames[1:],
+                       duration=durations, loop=0, disposal=2)
+    return out.getvalue()
+
+
+def rgb(h, n=3):
+    try:
+        b = bytes.fromhex(h.lstrip("#"))
+    except ValueError:
+        raise ApiError(f"bad color {h!r}")
+    if len(b) == 3 and n == 4:
+        b += b"\xFF"
+    if len(b) != n:
+        raise ApiError(f"color {h!r}: want {n} bytes")
+    return tuple(b)
+
+
+def check_slot(ftype, slot):
+    if ftype not in FTYPE:
+        raise ApiError("type must be gif or jpg")
+    try:
+        slot = int(slot)
+    except (TypeError, ValueError):
+        raise ApiError("slot must be a number")
+    if not 0 <= slot < SLOTS:
+        raise ApiError(f"slot must be 0..{SLOTS - 1}")
+    return slot
+
+
+# --- application ---------------------------------------------------------------------
+class App:
+    def __init__(self, demo=False, verbose=False):
+        self.demo = demo
+        self.device = Device(demo, verbose)
+        self.sensors = Sensors(demo)
+        self.monitor = None
+        self.config = load_config()
+        self.cfg_lock = threading.Lock()
+
+    # status ---------------------------------------------------------------------
+    def status(self):
+        out = {"demo": self.demo, "version": __version__, "connected": False, "error": self.device.error,
+               "monitor": self.monitor_state(), "config": self.config, "slots": SLOTS,
+               "pillow": self._has_pillow()}
+        try:
+            def q(dev):
+                st = dev.display_status()
+                cur = dev.current_item()
+                return {"firmware": dev.firmware(), "path": dev.path, "display": parse_display_status(st),
+                        "storage": parse_disk_info(dev.disk_info()), "current": cur}
+            r = self.device.run(q)
+        except ApiError as e:
+            out["error"] = str(e)
+            out["storage"] = self._cached_storage()
+            return out
+        kind, typ, slot = r.pop("current")
+        r["current"] = {"kind": KIND_NAME.get(kind, f"{kind:02X}"), "type": typ, "slot": slot}
+        out.update(r, connected=True)
+        self._annotate_storage(out["storage"])
+        return out
+
+    def _cached_storage(self):
+        st = {"total_kb": 0, "free_kb": 0}
+        for t in ("gif", "jpg"):
+            st[t] = {"capacity": SLOTS, "used": [s for s in range(SLOTS) if media_meta(t, s)]}
+        self._annotate_storage(st)
+        return st
+
+    def _annotate_storage(self, st):
+        for t in ("gif", "jpg"):
+            items = []
+            for s in range(SLOTS):
+                meta = media_meta(t, s)
+                items.append({"slot": s, "used": s in st[t]["used"], "cached": meta is not None,
+                              "name": meta["name"] if meta else None,
+                              "bytes": meta["bytes"] if meta else None})
+            st[t]["items"] = items
+
+    @staticmethod
+    def _has_pillow():
+        try:
+            import PIL  # noqa: F401
+            return True
+        except ImportError:
+            return False
+
+    def monitor_state(self):
+        m = self.monitor
+        if m is None or not m.is_alive():
+            return {"running": False}
+        return {"running": True, "lines": m.last, "error": m.error, "interval": m.interval}
+
+    def stop_monitor(self):
+        if self.monitor is not None:
+            self.monitor.stop()
+            self.monitor.join(timeout=5)
+            self.monitor = None
+
+    def set_config(self, **upd):
+        with self.cfg_lock:
+            self.config = merge(self.config, upd)
+            save_config(self.config)
+
+    # actions --------------------------------------------------------------------
+    def display(self, body):
+        fields = {}
+        if "brightness" in body:
+            b = int(body["brightness"])
+            if not 0 <= b <= 100:
+                raise ApiError("brightness is 0..100")
+            fields["brightness"] = b
+        if "standby" in body:
+            fields["standby"] = 0x10 if body["standby"] else 0x00
+        if "anim_slot" in body and body["anim_slot"] is not None:
+            fields["anim_type"] = MTYPE["gif"]
+            fields["anim_slot"] = check_slot("gif", body["anim_slot"])
+        if not fields:
+            raise ApiError("nothing to set")
+        st = self.device.run(lambda dev: dev.set_display_status(**fields))
+        return {"display": parse_display_status(st)}
+
+    def hwmon(self, body):
+        lines = body.get("lines") or []
+        if not 1 <= len(lines) <= 3:
+            raise ApiError("1 to 3 lines")
+        bg, fg = rgb(body.get("bg", "000000")), rgb(body.get("fg", "FFFFFF"))
+        live = bool(body.get("live", False))
+        interval = float(body.get("interval", 2))
+        spec, page = [], []
+        for l in lines:
+            label = str(l.get("label", ""))[:18]
+            if l.get("sensor"):
+                hw, _, attr = l["sensor"].partition("/")
+                if not (hw and attr) or attr.rstrip("0123456789") not in FORMATS:
+                    raise ApiError(f"bad sensor {l['sensor']!r}")
+                value = self.sensors.read(hw, attr)
+                spec.append({"label": label, "sensor": l["sensor"]})
+            else:
+                value = str(l.get("value", ""))
+                spec.append({"label": label, "value": value})
+            page.append((label, add_unit_glyphs(value)))
+        self.stop_monitor()
+        if live and all("sensor" in s for s in spec):
+            self.monitor = LiveMonitor(self.device, self.sensors, spec, bg, fg, interval)
+            self.monitor.start()
+        else:
+            def send(dev):
+                dev.hwmon(page, 0, None, bg, fg)
+                dev.mode(MODE_HWMON)
+            self.device.run(send)
+        self.set_config(mode="hwmon", hwmon={"lines": spec, "count": len(spec), "bg": body.get("bg", "000000"),
+                                               "fg": body.get("fg", "FFFFFF"), "live": live, "interval": interval})
+        return {"lines": page, "monitor": self.monitor_state()}
+
+    def show(self, body):
+        source = body.get("source")
+        duration = max(1, min(255, int(body.get("duration", 5))))
+        slide = {"source": source, "duration": duration}
+        if source == "gif":
+            slot = check_slot("gif", body.get("slot"))
+
+            def go(dev):
+                dev.slideshow_list([("gif", slot)], duration)
+                dev.play("gif", slot)
+            slide["gif_slot"] = slot
+        elif source == "jpg":
+            slot = check_slot("jpg", body.get("slot"))
+            bn = body.get("banner") or {}
+            texts = [str(t)[:48] for t in (bn.get("lines") or [])][:6]
+            color = rgb(bn.get("color", "FFFFFFFF"), 4)
+            align = 1 if bn.get("align") else 0
+            x = max(0, min(319, int(bn.get("x", 8))))
+            font = int(bn.get("font", 3))
+
+            def go(dev):
+                dev.banner("jpg", slot, texts, font, align, color, duration, x)
+            slide["jpg_slot"] = slot
+            slide["banner"] = {"lines": (texts + [""] * 6)[:6], "color": bn.get("color", "FFFFFFFF"),
+                               "align": align, "x": x, "font": font}
+        elif source == "clock":
+            h24 = bool(body.get("h24", False))
+
+            def go(dev):
+                dev.set_clock(h24=h24)
+                dev.slideshow_list([("clock", 1)], duration)
+                dev.play("clock", 1)
+            slide["h24"] = h24
+        else:
+            raise ApiError("source must be gif, jpg or clock")
+        self.stop_monitor()
+        self.device.run(go)
+        self.set_config(mode="slideshow", slideshow=slide)
+        return {"ok": True}
+
+    def upload(self, query, data):
+        ftype = query.get("type", "")
+        slot = check_slot(ftype, query.get("slot"))
+        name = os.path.basename(query.get("name", f"upload.{EXT.get(ftype, 'bin')}"))[:80]
+        if not data:
+            raise ApiError("empty upload")
+        if query.get("raw") in ("1", "true"):
+            out = data
+        else:
+            crop = None
+            if query.get("crop"):
+                try:
+                    crop = tuple(float(v) for v in query["crop"].split(","))
+                    assert len(crop) == 4
+                except (ValueError, AssertionError):
+                    raise ApiError("crop must be x,y,w,h")
+            out = prepare_bytes(data, ftype, crop)
+        if not out.startswith(MAGIC[ftype]):
+            raise ApiError(f"not a {ftype} file")
+        t0 = time.monotonic()
+        self.device.run(lambda dev: dev.upload(out, ftype, slot))
+        save_media(ftype, slot, out, name)
+        return {"type": ftype, "slot": slot, "bytes": len(out), "seconds": round(time.monotonic() - t0, 1)}
+
+    def delete(self, ftype, slot):
+        slot = check_slot(ftype, slot)
+        self.device.run(lambda dev: dev.delete(ftype, slot))
+        forget_media(ftype, slot)
+        return {"type": ftype, "slot": slot}
+
+    def raw(self, body):
+        try:
+            payload = bytes.fromhex("".join(str(body.get("hex", "")).replace(",", " ").split()))
+        except ValueError:
+            raise ApiError("hex bytes expected, e.g. DC or 5C 01")
+        if payload and payload[0] == CMD:
+            payload = payload[1:]
+        if not 1 <= len(payload) <= 64:
+            raise ApiError("1 to 64 bytes")
+        r = self.device.run(lambda dev: dev.cmd(payload))
+        return {"sent": hexs(bytes([CMD]) + payload), "reply": hexs(trim(r))}
+
+
+# --- HTTP ----------------------------------------------------------------------------
+class Handler(BaseHTTPRequestHandler):
+    server_version = "ryujin-lcd-web/" + __version__
+    app: App = None  # set by serve()
+
+    def log_message(self, fmt, *args):
+        if self.app.device.verbose:
+            sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
+
+    # helpers ----------------------------------------------------------------
+    def send_json(self, obj, status=200):
+        body = json.dumps(obj).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def read_body(self):
+        n = int(self.headers.get("Content-Length") or 0)
+        if n > MAX_UPLOAD:
+            raise ApiError("upload too large (16 MB max)", 413)
+        return self.rfile.read(n) if n else b""
+
+    def read_json(self):
+        raw = self.read_body()
+        if not raw:
+            return {}
+        try:
+            return json.loads(raw)
+        except ValueError:
+            raise ApiError("invalid JSON body")
+
+    def route(self):
+        u = urllib.parse.urlsplit(self.path)
+        return u.path.rstrip("/") or "/", dict(urllib.parse.parse_qsl(u.query))
+
+    def send_file(self, path, download_name=None):
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+        except OSError:
+            return self.send_json({"error": "not found"}, 404)
+        ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store" if path.startswith(DATA_DIR) else "no-cache")
+        self.end_headers()
+        self.wfile.write(data)
+
+    # verbs ------------------------------------------------------------------
+    def do_GET(self):
+        path, query = self.route()
+        try:
+            if path == "/api/status":
+                return self.send_json(self.app.status())
+            if path == "/api/sensors":
+                return self.send_json({"sensors": self.app.sensors.list()})
+            if path.startswith("/api/media/"):
+                parts = path.split("/")
+                if len(parts) == 5:
+                    slot = check_slot(parts[3], parts[4])
+                    return self.send_file(media_path(parts[3], slot))
+            if path.startswith("/api/"):
+                return self.send_json({"error": "not found"}, 404)
+            # static
+            rel = "index.html" if path == "/" else path.lstrip("/")
+            full = os.path.normpath(os.path.join(STATIC, rel))
+            if not full.startswith(STATIC + os.sep) or not os.path.isfile(full):
+                return self.send_json({"error": "not found"}, 404)
+            return self.send_file(full)
+        except ApiError as e:
+            return self.send_json({"error": str(e)}, e.status)
+
+    def do_POST(self):
+        path, query = self.route()
+        try:
+            if path == "/api/upload":
+                return self.send_json(self.app.upload(query, self.read_body()))
+            body = self.read_json()
+            if path == "/api/display":
+                return self.send_json(self.app.display(body))
+            if path == "/api/hwmon":
+                return self.send_json(self.app.hwmon(body))
+            if path == "/api/show":
+                return self.send_json(self.app.show(body))
+            if path == "/api/raw":
+                return self.send_json(self.app.raw(body))
+            if path == "/api/monitor/stop":
+                self.app.stop_monitor()
+                return self.send_json({"monitor": self.app.monitor_state()})
+            if path == "/api/config":
+                self.app.set_config(**body)
+                return self.send_json({"config": self.app.config})
+            return self.send_json({"error": "not found"}, 404)
+        except ApiError as e:
+            return self.send_json({"error": str(e)}, e.status)
+        except (ValueError, TypeError, KeyError) as e:
+            return self.send_json({"error": f"bad request: {e}"}, 400)
+
+    def do_DELETE(self):
+        path, _ = self.route()
+        try:
+            parts = path.split("/")
+            if path.startswith("/api/media/") and len(parts) == 5:
+                return self.send_json(self.app.delete(parts[3], parts[4]))
+            return self.send_json({"error": "not found"}, 404)
+        except ApiError as e:
+            return self.send_json({"error": str(e)}, e.status)
+
+
+def serve(host, port, demo=False, verbose=False):
+    Handler.app = App(demo, verbose)
+    httpd = ThreadingHTTPServer((host, port), Handler)
+    httpd.daemon_threads = True
+    print(f"ryujin-lcd-web: http://{host}:{port}/{'  (demo device)' if demo else ''}", flush=True)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        Handler.app.stop_monitor()
+        Handler.app.device.drop()
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--host", default="127.0.0.1", help="bind address (127.0.0.1; 0.0.0.0 for the LAN)")
+    ap.add_argument("--port", type=int, default=8686)
+    ap.add_argument("--demo", action="store_true", help="simulated device and sensors, no cooler needed")
+    ap.add_argument("-v", "--verbose", action="store_true", help="log requests and every HID report")
+    a = ap.parse_args()
+    serve(a.host, a.port, a.demo, a.verbose)
+
+
+if __name__ == "__main__":
+    main()

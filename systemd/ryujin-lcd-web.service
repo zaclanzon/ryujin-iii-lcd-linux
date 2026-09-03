@@ -1,0 +1,14 @@
+[Unit]
+Description=Ryujin III LCD web control panel (http://127.0.0.1:8686/)
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/ryujin-lcd-web
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+SyslogIdentifier=ryujin-lcd-web
+
+[Install]
+WantedBy=default.target

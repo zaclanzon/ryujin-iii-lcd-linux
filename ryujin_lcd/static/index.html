@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ROG Ryujin III · LCD</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M2 16c6-8 22-8 28 0-6 8-22 8-28 0z' fill='%23e11d3a'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%230b0b0d'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Main">
+    <div class="logo" title="ryujin-lcd">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M3 24c8-11 34-11 42 0-8 11-34 11-42 0z" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M14 24c3-4 17-4 20 0-3 4-17 4-20 0z" fill="currentColor"/><path d="M24 6l3 7-3 3-3-3zM24 42l-3-7 3-3 3 3z" fill="currentColor"/></svg>
+    </div>
+    <button class="rail-item" data-panel="dashboard" title="Home">
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg><span>Home</span>
+    </button>
+    <button class="rail-item active" data-panel="display" title="Display">
+      <svg viewBox="0 0 24 24"><path d="M3 4h18a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm1 2v9h16V6zM8 19h8v2H8z"/></svg><span>Display</span>
+    </button>
+    <button class="rail-item" data-panel="media" title="Media library">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 2v10h14V7zm2 8l3-4 2 2.5L14 10l4 5z"/></svg><span>Media</span>
+    </button>
+    <button class="rail-item" data-panel="settings" title="Settings">
+      <svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm8.6 3-2-.4a6.9 6.9 0 0 0-.6-1.5l1.2-1.7-1.6-1.6-1.7 1.2a6.9 6.9 0 0 0-1.5-.6L14 4.4h-2.2l-.4 2a6.9 6.9 0 0 0-1.5.6L8.2 5.8 6.6 7.4l1.2 1.7a6.9 6.9 0 0 0-.6 1.5l-2 .4v2.2l2 .4a6.9 6.9 0 0 0 .6 1.5l-1.2 1.7 1.6 1.6 1.7-1.2a6.9 6.9 0 0 0 1.5.6l.4 2h2.2l.4-2a6.9 6.9 0 0 0 1.5-.6l1.7 1.2 1.6-1.6-1.2-1.7a6.9 6.9 0 0 0 .6-1.5l2-.4z"/></svg><span>Settings</span>
+    </button>
+    <button class="rail-item" data-panel="advanced" title="Device and tools">
+      <svg viewBox="0 0 24 24"><path d="M21.7 7.3a5.5 5.5 0 0 1-7.3 6.8L8 20.5a2 2 0 0 1-2.8-2.8l6.4-6.4a5.5 5.5 0 0 1 6.8-7.3l-3.2 3.2 1.6 3.4 3.4 1.6z"/></svg><span>Tools</span>
+    </button>
+    <div class="rail-spacer"></div>
+    <div class="rail-version" id="rail-version">v0.1</div>
+  </nav>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumbs"><span>Devices</span><i>/</i><strong>ROG RYUJIN III</strong></div>
+      <div class="topbar-right">
+        <span class="badge demo" id="demo-badge" hidden>DEMO DEVICE</span>
+        <span class="conn" id="conn"><i></i><span>Connecting…</span></span>
+        <button class="icon-btn" id="refresh" title="Refresh"><svg viewBox="0 0 24 24"><path d="M12 5a7 7 0 0 1 6.3 4H16v2h6V5h-2v2.3A9 9 0 0 0 3 12h2a7 7 0 0 1 7-7zm7 7a7 7 0 0 1-13.3 3H8v-2H2v6h2v-2.3A9 9 0 0 0 21 12z"/></svg></button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="device-art">
+        <div class="pump">
+          <div class="pump-ring"></div>
+          <div class="lcd">
+            <canvas id="preview" width="320" height="240"></canvas>
+            <div class="lcd-glare"></div>
+          </div>
+        </div>
+        <div class="preview-caption"><span class="dot"></span><span id="preview-label">Preview</span></div>
+      </div>
+      <div class="hero-info">
+        <h1>ROG RYUJIN III <small>360 · 3.5" LCD</small></h1>
+        <div class="hero-meta" id="hero-meta">
+          <div class="meta"><label>Firmware</label><b id="m-fw">—</b></div>
+          <div class="meta"><label>On screen</label><b id="m-current">—</b></div>
+          <div class="meta"><label>Brightness</label><b id="m-bright">—</b></div>
+          <div class="meta"><label>Standby</label><b id="m-standby">—</b></div>
+        </div>
+        <div class="storage">
+          <div class="storage-head"><label>Device storage</label><span id="storage-text">—</span></div>
+          <div class="bar"><i id="storage-bar"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section class="panel" data-panel="dashboard">
+      <div class="grid tiles" id="dash-tiles"></div>
+      <div class="card">
+        <div class="card-head"><h2>Sensors</h2><span class="hint">hwmon, refreshed every 2 s</span></div>
+        <div class="sensor-grid" id="sensor-grid"></div>
+      </div>
+    </section>
+
+    <!-- DISPLAY -->
+    <section class="panel active" data-panel="display">
+      <div class="card">
+        <div class="card-head"><h2>Display mode</h2></div>
+        <div class="row">
+          <div class="field">
+            <label>Mode</label>
+            <div class="select"><select id="mode">
+              <option value="hwmon">Hardware Monitor</option>
+              <option value="slideshow">Customized Slideshow</option>
+            </select></div>
+          </div>
+          <div class="field" id="duration-field">
+            <label>Duration</label>
+            <div class="select"><select id="duration">
+              <option value="5">5 s</option><option value="10">10 s</option><option value="15">15 s</option>
+              <option value="30">30 s</option><option value="60">60 s</option>
+            </select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mode-hwmon">
+        <div class="card-head"><h2>Hardware Monitor</h2><span class="hint">up to three sensor lines with the device's °C, RPM and V glyphs</span></div>
+        <label class="sublabel">Layout</label>
+        <div class="layouts" id="layouts">
+          <button class="layout" data-count="1"><i></i><span>1 sensor</span></button>
+          <button class="layout" data-count="2"><i></i><i></i><span>2 sensors</span></button>
+          <button class="layout active" data-count="3"><i></i><i></i><i></i><span>3 sensors</span></button>
+        </div>
+        <div class="lines" id="hw-lines"></div>
+        <div class="row wrap">
+          <div class="field">
+            <label>Background</label>
+            <div class="color"><input type="color" id="hw-bg" value="#000000"><span id="hw-bg-txt">#000000</span></div>
+          </div>
+          <div class="field">
+            <label>Text</label>
+            <div class="color"><input type="color" id="hw-fg" value="#ffffff"><span id="hw-fg-txt">#FFFFFF</span></div>
+          </div>
+          <div class="field">
+            <label>Live update</label>
+            <label class="toggle"><input type="checkbox" id="hw-live" checked><i></i><span>Keep sensor values fresh</span></label>
+          </div>
+          <div class="field">
+            <label>Interval</label>
+            <div class="select"><select id="hw-interval">
+              <option value="1">1 s</option><option value="2" selected>2 s</option><option value="5">5 s</option><option value="10">10 s</option>
+            </select></div>
+          </div>
+        </div>
+        <p class="note">Colors other than black on white are untested on the panel. The unit glyphs are added automatically.</p>
+      </div>
+
+      <div class="card mode-slideshow" hidden>
+        <div class="card-head"><h2>Customized Slideshow</h2></div>
+        <div class="radios" id="source">
+          <label class="radio"><input type="radio" name="source" value="gif" checked><i></i><span>Animation</span></label>
+          <label class="radio"><input type="radio" name="source" value="jpg"><i></i><span>Wallpaper</span></label>
+          <label class="radio"><input type="radio" name="source" value="clock"><i></i><span>Time</span></label>
+        </div>
+
+        <div class="source-pane" data-source="gif">
+          <label class="sublabel">Animations <span class="hint">GIF · 320×240 · 16 slots</span></label>
+          <div class="tiles-grid" id="gif-picker"></div>
+        </div>
+
+        <div class="source-pane" data-source="jpg" hidden>
+          <label class="sublabel">Wallpapers <span class="hint">JPEG · 320×240 · 16 slots</span></label>
+          <div class="tiles-grid" id="jpg-picker"></div>
+          <label class="sublabel">Banner text <span class="hint">up to six lines, 48 bytes each</span></label>
+          <div class="banner-lines" id="banner-lines"></div>
+          <div class="row wrap">
+            <div class="field">
+              <label>Text color</label>
+              <div class="color"><input type="color" id="bn-color" value="#ffffff"><span id="bn-color-txt">#FFFFFF</span></div>
+            </div>
+            <div class="field">
+              <label>Opacity</label>
+              <div class="range"><input type="range" id="bn-alpha" min="0" max="255" value="255"><output id="bn-alpha-out">100%</output></div>
+            </div>
+            <div class="field">
+              <label>Alignment</label>
+              <div class="seg" id="bn-align">
+                <button data-v="0" class="active">Left</button><button data-v="1">Right</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Anchor X</label>
+              <div class="range"><input type="range" id="bn-x" min="0" max="319" value="8"><output id="bn-x-out">8 px</output></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="source-pane" data-source="clock" hidden>
+          <label class="sublabel">Clock</label>
+          <div class="seg" id="clock-fmt">
+            <button data-v="0" class="active">12-hour</button><button data-v="1">24-hour</button>
+          </div>
+          <p class="note">The device clock is set from this computer's time when you apply.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEDIA -->
+    <section class="panel" data-panel="media">
+      <div class="card">
+        <div class="card-head"><h2>Animations</h2><span class="hint">GIF, stored on the cooler. Click an empty slot to upload.</span></div>
+        <div class="tiles-grid library" id="gif-library"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Wallpapers</h2><span class="hint">JPEG, stored on the cooler.</span></div>
+        <div class="tiles-grid library" id="jpg-library"></div>
+      </div>
+      <p class="note">Files are cropped to 4:3 and resized to 320×240 before upload. Thumbnails come from a local copy in <code>~/.local/share/ryujin-lcd/media</code>; a slot that is used on the device but has no local copy shows as <em>unknown</em>.</p>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="panel" data-panel="settings">
+      <div class="card">
+        <div class="card-head"><h2>Brightness</h2></div>
+        <div class="range big">
+          <input type="range" id="brightness" min="10" max="100" step="10" value="60">
+          <output id="brightness-out">60%</output>
+        </div>
+        <div class="ticks"><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>60</span><span>70</span><span>80</span><span>90</span><span>100</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Standby Mode</h2><span class="hint">what the LCD shows when the host is asleep</span></div>
+        <label class="toggle"><input type="checkbox" id="standby"><i></i><span>Enable standby mode</span></label>
+        <label class="sublabel" style="margin-top:18px">Custom animation</label>
+        <div class="tiles-grid small" id="standby-picker"></div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="settings-reset">Revert</button>
+        <button class="btn primary" id="settings-save"><span>Save</span></button>
+      </div>
+    </section>
+
+    <!-- ADVANCED -->
+    <section class="panel" data-panel="advanced">
+      <div class="card">
+        <div class="card-head"><h2>Device</h2></div>
+        <dl class="kv" id="device-kv"></dl>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Live monitor</h2><span class="hint">the in-process sensor feed for the hardware-monitor page</span></div>
+        <div class="row">
+          <div id="monitor-state" class="mono"></div>
+          <button class="btn" id="monitor-stop">Stop feed</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Raw command</h2><span class="hint">bytes after the EC report id, e.g. <code>DC</code> or <code>D0</code></span></div>
+        <form class="row" id="raw-form">
+          <input class="text mono" id="raw-hex" placeholder="DC" spellcheck="false" autocomplete="off">
+          <button class="btn primary" type="submit"><span>Send</span></button>
+        </form>
+        <pre class="console" id="raw-log"></pre>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="applybar" id="applybar">
+  <div class="apply-status" id="apply-status"></div>
+  <button class="btn" id="apply-revert">Revert</button>
+  <button class="btn primary" id="apply"><span>Apply</span></button>
+</footer>
+
+<!-- crop dialog -->
+<div class="modal" id="crop-modal" hidden>
+  <div class="dialog">
+    <div class="dialog-head"><h3 id="crop-title">Crop</h3><button class="icon-btn" data-close>✕</button></div>
+    <div class="crop-stage" id="crop-stage">
+      <img id="crop-img" alt="" draggable="false">
+      <div class="crop-frame"></div>
+    </div>
+    <div class="row crop-controls">
+      <label>Zoom</label>
+      <input type="range" id="crop-zoom" min="1" max="4" step="0.01" value="1">
+      <span class="hint" id="crop-info"></span>
+    </div>
+    <div class="dialog-foot">
+      <span class="hint" id="crop-target"></span>
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn primary" id="crop-save"><span>Save</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- confirm dialog -->
+<div class="modal" id="confirm-modal" hidden>
+  <div class="dialog narrow">
+    <div class="dialog-head"><h3 id="confirm-title">Delete file</h3></div>
+    <p id="confirm-text"></p>
+    <div class="dialog-foot">
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn primary" id="confirm-ok"><span>OK</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- progress -->
+<div class="modal" id="busy-modal" hidden>
+  <div class="dialog narrow busy">
+    <div class="spinner"></div>
+    <p id="busy-text">Working…</p>
+    <div class="bar"><i id="busy-bar"></i></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<input type="file" id="file-input" hidden>
+<script src="app.js"></script>
+</body>
+</html>

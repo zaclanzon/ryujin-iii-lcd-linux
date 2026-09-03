@@ -25,6 +25,9 @@ What works, all verified on the hardware:
 The device keeps playing whatever was last selected, with no host involvement,
 across reboots.
 
+There is a command-line tool and a web control panel in the style of Armoury
+Crate (below).
+
 ## Install
 
 ```
@@ -32,6 +35,7 @@ sudo apt install python3-usb python3-pil      # pyusb for uploads, Pillow to res
 git clone https://github.com/zaclanzon/ryujin3-lcd && cd ryujin3-lcd
 ./install.sh                                  # udev rule (sudo), ~/.local/bin/ryujin-lcd
 ryujin-lcd info
+ryujin-lcd-web                                # http://127.0.0.1:8686/
 ```
 
 `install.sh` copies the package under `~/.local/lib` and writes wrappers, so the
@@ -76,6 +80,32 @@ ryujin-lcd-monitor Coolant=rog_ryujin/temp1 Pump=rog_ryujin/fan1 CPU=k10temp/tem
 Lines are `LABEL=HWMON/SENSOR` where `HWMON` is the driver name in
 `/sys/class/hwmon/*/name` and `SENSOR` the attribute without `_input`
 (`temp1`, `fan2`, `in0`, `power1`, ...). Up to three lines.
+
+## Web control panel
+
+![Display page of the web panel](docs/web-display.png)
+
+`ryujin-lcd-web` serves a single-page control panel that follows the layout of the
+Armoury Crate device page: a preview of the LCD on the pump head, the display
+mode (Hardware Monitor with layout tiles and hwmon sensor pickers, or Customized
+Slideshow with Animation / Wallpaper / Time), banner text over a wallpaper, a
+media library with upload, crop and delete, the brightness slider and standby
+settings, and a tools page with the raw status bytes and a raw command console.
+
+```
+ryujin-lcd-web                     # http://127.0.0.1:8686/
+ryujin-lcd-web --host 0.0.0.0      # reachable from the LAN (there is no login)
+ryujin-lcd-web --demo              # simulated cooler and sensors, no hardware needed
+./install.sh --web                 # run it as a user service
+```
+
+The server is the Python standard library only; Pillow is needed to crop and
+resize uploads. Applied settings are saved in `~/.config/ryujin-lcd/web.json`,
+uploaded media are kept in `~/.local/share/ryujin-lcd/media` for the thumbnails
+(the cooler cannot send files back). "Live update" on the hardware-monitor page
+starts a sensor feed inside the server, equivalent to `ryujin-lcd-monitor`; do
+not run both at the same time. All device access is serialized, so the page,
+the feed and an upload never interleave on the shared HID interface.
 
 ## Protocol in one paragraph
 
