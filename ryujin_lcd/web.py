@@ -46,7 +46,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .device import (CMD, FTYPE, HEIGHT, KIND, MODE_HWMON, MODE_SLIDESHOW, MTYPE, REPLY_ID, WIDTH,
-                     Ryujin, RyujinError, add_unit_glyphs, fit, hexs, trim)
+                     Ryujin, RyujinError, add_unit_glyphs, encode, hexs, trim)
 from .monitor import FORMATS, hwmon_id, read_value
 from . import __version__
 
@@ -412,7 +412,7 @@ def save_config(cfg):
 def prepare_bytes(data, ftype, crop=None):
     """Crop (source pixels, optional), center-fit to 320x240, re-encode. Needs Pillow."""
     try:
-        from PIL import Image, ImageSequence
+        from PIL import Image
     except ImportError:
         raise ApiError("Pillow is not installed (sudo apt install python3-pil); only raw 320x240 files can be sent", 501)
     try:
@@ -421,26 +421,18 @@ def prepare_bytes(data, ftype, crop=None):
         raise ApiError(f"cannot decode image: {e}")
 
     def prep(fr):
-        fr = fr.convert("RGB")
         if crop:
             x, y, w, h = crop
             box = (max(0, int(round(x))), max(0, int(round(y))),
                    min(fr.width, int(round(x + w))), min(fr.height, int(round(y + h))))
             if box[2] - box[0] >= 2 and box[3] - box[1] >= 2:
                 fr = fr.crop(box)
-        return fit(fr)
+        return fr
 
-    out = io.BytesIO()
-    if ftype == "jpg":
-        prep(im).save(out, "JPEG", quality=90)
-    else:
-        frames, durations = [], []
-        for fr in ImageSequence.Iterator(im):
-            frames.append(prep(fr).quantize(256, dither=Image.Dither.NONE))
-            durations.append(fr.info.get("duration", 100))
-        frames[0].save(out, "GIF", save_all=True, append_images=frames[1:],
-                       duration=durations, loop=0, disposal=2)
-    return out.getvalue()
+    try:
+        return encode(im, ftype, prep)
+    except Exception as e:  # noqa: BLE001
+        raise ApiError(f"cannot convert image: {e}")
 
 
 def settle(dev, kind, timeout=1.0):

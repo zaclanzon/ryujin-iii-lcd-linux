@@ -258,20 +258,42 @@ def fit(im):
     return im.resize((WIDTH, HEIGHT), 1)   # LANCZOS
 
 
-def prepare(path, ftype):
+def flatten(fr):
+    """Frame -> opaque RGB. Transparent pixels land on black, the panel's own background,
+    and the source's transparency info is dropped: a palette GIF's transparent index turns
+    into an RGB tuple on convert(), which Pillow's GIF encoder then refuses to save."""
+    from PIL import Image
+    if fr.mode == "P" and "transparency" in fr.info or fr.mode in ("RGBA", "LA", "PA"):
+        fr = fr.convert("RGBA")
+        bg = Image.new("RGB", fr.size, (0, 0, 0))
+        bg.paste(fr, mask=fr.getchannel("A"))
+        return bg
+    fr = fr.convert("RGB")
+    fr.info.pop("transparency", None)
+    return fr
+
+
+def encode(im, ftype, prep=None):
+    """Re-encode a Pillow image (all frames of a GIF) as a 320x240 JPEG or GIF.
+    prep(frame) -> frame runs before the fit; the default is the center 4:3 crop alone."""
     from PIL import Image, ImageSequence
-    im = Image.open(path)
+    prep = prep or (lambda fr: fr)
     out = io.BytesIO()
     if ftype == "jpg":
-        fit(im.convert("RGB")).save(out, "JPEG", quality=90)
+        fit(prep(flatten(im))).save(out, "JPEG", quality=90)
     else:
         frames, durations = [], []
         for fr in ImageSequence.Iterator(im):
-            frames.append(fit(fr.convert("RGB")).quantize(256, dither=Image.Dither.NONE))
+            frames.append(fit(prep(flatten(fr))).quantize(256, dither=Image.Dither.NONE))
             durations.append(fr.info.get("duration", 100))
         frames[0].save(out, "GIF", save_all=True, append_images=frames[1:],
                        duration=durations, loop=0, disposal=2)
     return out.getvalue()
+
+
+def prepare(path, ftype):
+    from PIL import Image
+    return encode(Image.open(path), ftype)
 
 
 def add_unit_glyphs(value):

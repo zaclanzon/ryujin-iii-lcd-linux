@@ -243,6 +243,8 @@ label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-
 .tile.empty { border-style: dashed; color: var(--muted); }
 .tile.empty .plus { font-size: 30px; font-weight: 200; line-height: 1; }
 .tile.empty:hover { color: var(--text); background: #0f0f12; }
+.tile.add { align-content: center; }
+.tile.add .add-txt { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin-top: 8px; }
 .tile.unknown { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
 .tile .use { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0; transition: .15s; white-space: nowrap; }
 .tile.library:hover .use { opacity: 1; }

@@ -233,9 +233,10 @@ function renderBannerLines() {
 function tileHTML(type, item, opts = {}) {
   const key = `${type}-${item.slot}`;
   const playing = item.used && onScreen(type, item.slot);
-  const cls = ["tile", opts.library ? "library" : "", opts.selected ? "selected" : "", playing ? "playing" : "", item.used ? (item.cached ? "" : "unknown") : "empty"].join(" ");
+  const cls = ["tile", opts.library ? "library" : "", opts.selected ? "selected" : "", playing ? "playing" : "", item.used ? (item.cached ? "" : "unknown") : "empty", opts.add ? "add" : ""].join(" ");
   let inner;
-  if (!item.used) inner = `<span class="plus">+</span>`;
+  if (opts.add) inner = `<span class="plus">+</span><span class="add-txt">Add ${type === "gif" ? "animation" : "wallpaper"}</span>`;
+  else if (!item.used) inner = `<span class="plus">+</span>`;
   else if (item.cached) inner = `<img src="/api/media/${type}/${item.slot}?v=${item.bytes}" alt="">`;
   else inner = `<span>no local copy</span>`;
   const name = item.used && item.cached ? `<div class="name">${esc(item.name || "")}${item.bytes ? ` <span class="hint">${fmtBytes(item.bytes)}</span>` : ""}</div>` : "";
@@ -248,11 +249,19 @@ function slotItems(type) {
   if (st && st[type] && st[type].items) return st[type].items;
   return Array.from({ length: SLOTS }, (_, i) => ({ slot: i, used: false, cached: false }));
 }
+// the slideshow pickers show what is stored plus one "+" tile for the next free slot;
+// the Media page shows the whole slot map
+function pickerHTML(type, selected) {
+  const items = slotItems(type), free = items.find((it) => !it.used);
+  const html = items.filter((it) => it.used).map((it) => tileHTML(type, it, { selected: selected === it.slot }));
+  if (free) html.push(tileHTML(type, free, { add: true }));
+  return html.join("");
+}
 function renderPickers() {
   if (!state.form) return;
   const f = state.form;
-  $("#gif-picker").innerHTML = slotItems("gif").map((it) => tileHTML("gif", it, { selected: f.slideshow.gif_slot === it.slot })).join("");
-  $("#jpg-picker").innerHTML = slotItems("jpg").map((it) => tileHTML("jpg", it, { selected: f.slideshow.jpg_slot === it.slot })).join("");
+  $("#gif-picker").innerHTML = pickerHTML("gif", f.slideshow.gif_slot);
+  $("#jpg-picker").innerHTML = pickerHTML("jpg", f.slideshow.jpg_slot);
   const anim = state.settings ? state.settings.anim_slot : null;
   $("#standby-picker").innerHTML = slotItems("gif").filter((it) => it.used).map((it) => tileHTML("gif", it, { selected: anim === it.slot })).join("")
     || `<div class="empty-msg">No animations stored yet. Upload a GIF in the Media library.</div>`;
