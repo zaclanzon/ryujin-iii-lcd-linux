@@ -79,7 +79,10 @@ ryujin-lcd-monitor Coolant=rog_ryujin/temp1 Pump=rog_ryujin/fan1 CPU=k10temp/tem
 
 Lines are `LABEL=HWMON/SENSOR` where `HWMON` is the driver name in
 `/sys/class/hwmon/*/name` and `SENSOR` the attribute without `_input`
-(`temp1`, `fan2`, `in0`, `power1`, ...). Up to three lines.
+(`temp1`, `fan2`, `in0`, `power1`, ...). Up to three lines. When several devices
+share a name (three NVMe drives are all `nvme`), `HWMON` can be `NAME:DEVICE`
+with `DEVICE` the basename of `/sys/class/hwmon/hwmonN/device`, e.g.
+`nvme:nvme1`; the web panel lists them that way.
 
 ## Web control panel
 
@@ -96,16 +99,24 @@ settings, and a tools page with the raw status bytes and a raw command console.
 ryujin-lcd-web                     # http://127.0.0.1:8686/
 ryujin-lcd-web --host 0.0.0.0      # reachable from the LAN (there is no login)
 ryujin-lcd-web --demo              # simulated cooler and sensors, no hardware needed
-./install.sh --web                 # run it as a user service
+./install.sh --web                 # run it as a user service (replaces the monitor service)
 ```
 
 The server is the Python standard library only; Pillow is needed to crop and
 resize uploads. Applied settings are saved in `~/.config/ryujin-lcd/web.json`,
 uploaded media are kept in `~/.local/share/ryujin-lcd/media` for the thumbnails
 (the cooler cannot send files back). "Live update" on the hardware-monitor page
-starts a sensor feed inside the server, equivalent to `ryujin-lcd-monitor`; do
-not run both at the same time. All device access is serialized, so the page,
-the feed and an upload never interleave on the shared HID interface.
+starts a sensor feed inside the server, equivalent to `ryujin-lcd-monitor`, and
+the web service is declared to conflict with the monitor service so only one of
+them drives the page. At start the server re-applies what needs the host: it
+restarts the live feed and sets the clock again (`--no-restore` skips this); a
+stored animation or wallpaper keeps playing by itself. All device access is
+serialized, so the page, the feed and an upload never interleave on the shared
+HID interface. The API refuses cross-origin requests, so another web site open
+in the same browser cannot drive the cooler through it.
+
+A file that is on screen cannot be deleted: the cooler acknowledges the command
+and keeps the file. The panel reports this; show something else first.
 
 ## Protocol in one paragraph
 

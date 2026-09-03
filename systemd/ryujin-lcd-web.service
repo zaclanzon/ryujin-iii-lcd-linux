@@ -1,5 +1,7 @@
 [Unit]
 Description=Ryujin III LCD web control panel (http://127.0.0.1:8686/)
+# The panel's "Live update" is the same sensor feed as ryujin-lcd-monitor; only one may drive the page.
+Conflicts=ryujin-lcd-monitor.service
 StartLimitIntervalSec=0
 
 [Service]

@@ -1,6 +1,6 @@
 """Web control panel for the Ryujin III LCD, in the style of Armoury Crate.
 
-  ryujin-lcd-web [--host 127.0.0.1] [--port 8686] [--demo] [-v]
+  ryujin-lcd-web [--host 127.0.0.1] [--port 8686] [--demo] [--no-restore] [-v]
 
 Serves a single-page app (ryujin_lcd/static) and a JSON API from the Python standard
 library, no framework. Everything the CLI does is available: display mode (hardware
@@ -12,10 +12,14 @@ and an upload never interleave on the shared HID interface. Uploaded media are k
 in ~/.local/share/ryujin-lcd/media so the page can show thumbnails (the device
 cannot read files back). The applied settings are saved in ~/.config/ryujin-lcd/web.json.
 
+At start the saved mode is re-applied where the device needs the host for it: the
+live sensor feed is started again, the clock is set again (--no-restore skips this).
+A stored animation or wallpaper keeps playing on its own.
+
 --demo runs without the cooler: a simulated device with simulated sensors, so the
 page can be tried (and developed) on any machine.
 
-  GET  /api/status                 device, display, storage, monitor, saved config
+  GET  /api/status[?storage=1]     device, display, storage, monitor, saved config
   GET  /api/sensors                hwmon sensors with current values
   POST /api/display                {brightness, standby, anim_slot}
   POST /api/hwmon                  {lines:[{label, sensor|value}], bg, fg, live, interval}
@@ -43,7 +47,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .device import (CMD, FTYPE, HEIGHT, KIND, MODE_HWMON, MODE_SLIDESHOW, MTYPE, REPLY_ID, WIDTH,
                      Ryujin, RyujinError, add_unit_glyphs, fit, hexs, trim)
-from .monitor import FORMATS, hwmon_path, read_value
+from .monitor import FORMATS, hwmon_id, read_value
 from . import __version__
 
 STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
@@ -145,6 +149,10 @@ class DemoRyujin:
         self.sizes[(ftype, slot)] = max(8, -(-len(data) // 1024))
 
     def delete(self, ftype, slot):
+        on_screen = (self.current == (KIND["gif"], MTYPE["gif"], slot) if ftype == "gif"
+                     else self.current[0] == MODE_SLIDESHOW and self.current[2] == slot)
+        if on_screen:
+            return      # like the cooler: acknowledged, but the file stays while it is shown
         self.slots[ftype].discard(slot)
         self.sizes.pop((ftype, slot), None)
 
@@ -219,23 +227,33 @@ class Sensors:
         self.demo = demo
 
     def real(self):
-        out = []
+        out, seen = [], {}
         for d in sorted(glob.glob("/sys/class/hwmon/hwmon*")):
             try:
                 name = open(os.path.join(d, "name")).read().strip()
             except OSError:
                 continue
-            for inp in sorted(glob.glob(os.path.join(d, "*_input"))):
-                attr = os.path.basename(inp)[:-6]
-                kind = attr.rstrip("0123456789")
-                if kind not in FORMATS:
-                    continue
-                label = attr
-                try:
-                    label = open(os.path.join(d, attr + "_label")).read().strip() or attr
-                except OSError:
-                    pass
-                out.append({"id": f"{name}/{attr}", "hwmon": name, "attr": attr, "label": label, "kind": kind})
+            seen.setdefault(name, []).append(d)
+        dupes = {n for n, ds in seen.items() if len(ds) > 1}
+        for name, dirs in seen.items():
+            for d in dirs:
+                out += self._device(d, hwmon_id(d) if name in dupes else name)
+        return out
+
+    @staticmethod
+    def _device(d, name):
+        out = []
+        for inp in sorted(glob.glob(os.path.join(d, "*_input"))):
+            attr = os.path.basename(inp)[:-6]
+            kind = attr.rstrip("0123456789")
+            if kind not in FORMATS:
+                continue
+            label = attr
+            try:
+                label = open(os.path.join(d, attr + "_label")).read().strip() or attr
+            except OSError:
+                pass
+            out.append({"id": f"{name}/{attr}", "hwmon": name, "attr": attr, "label": label, "kind": kind})
         return out
 
     def list(self):
@@ -425,6 +443,14 @@ def prepare_bytes(data, ftype, crop=None):
     return out.getvalue()
 
 
+def settle(dev, kind, timeout=1.0):
+    """Wait until the current-item reply shows `kind`: the cooler answers with the previous
+    page for ~100 ms after a play/mode command (measured 2026-09-03)."""
+    end = time.monotonic() + timeout
+    while dev.current_item()[0] != kind and time.monotonic() < end:
+        time.sleep(0.05)
+
+
 def rgb(h, n=3):
     try:
         b = bytes.fromhex(h.lstrip("#"))
@@ -458,37 +484,53 @@ class App:
         self.monitor = None
         self.config = load_config()
         self.cfg_lock = threading.Lock()
+        self.firmware = None          # read once
+        self.storage, self.storage_at = None, 0.0   # the table changes only on upload/delete
 
     # status ---------------------------------------------------------------------
-    def status(self):
+    def status(self, storage=False):
+        """Two commands per poll (display status, current item). The storage table needs a
+        three-step handshake that the cooler occasionally leaves unanswered, so it is read
+        on demand: after upload/delete, on request (storage=True) and at most once a minute."""
         out = {"demo": self.demo, "version": __version__, "connected": False, "error": self.device.error,
                "monitor": self.monitor_state(), "config": self.config, "slots": SLOTS,
                "pillow": self._has_pillow()}
         try:
             def q(dev):
-                st = dev.display_status()
-                cur = dev.current_item()
-                return {"firmware": dev.firmware(), "path": dev.path, "display": parse_display_status(st),
-                        "storage": parse_disk_info(dev.disk_info()), "current": cur}
+                if self.firmware is None:
+                    self.firmware = dev.firmware()
+                return {"firmware": self.firmware, "path": dev.path,
+                        "display": parse_display_status(dev.display_status()), "current": dev.current_item()}
             r = self.device.run(q)
         except ApiError as e:
             out["error"] = str(e)
-            out["storage"] = self._cached_storage()
+            out["storage"] = self._annotate_storage(dict(self.storage)) if self.storage else self._cached_storage()
             return out
         kind, typ, slot = r.pop("current")
         r["current"] = {"kind": KIND_NAME.get(kind, f"{kind:02X}"), "type": typ, "slot": slot}
         out.update(r, connected=True)
-        self._annotate_storage(out["storage"])
+        if storage or self.storage is None or time.monotonic() - self.storage_at > 60:
+            try:
+                self.read_storage()
+            except ApiError as e:
+                out["storage_error"] = str(e)
+        out["storage"] = self._annotate_storage(dict(self.storage)) if self.storage else self._cached_storage()
         return out
 
+    def read_storage(self, dev=None):
+        st = parse_disk_info(dev.disk_info()) if dev else self.device.run(lambda d: parse_disk_info(d.disk_info()))
+        self.storage, self.storage_at = st, time.monotonic()
+        return st
+
     def _cached_storage(self):
+        """Offline: what the local copies say."""
         st = {"total_kb": 0, "free_kb": 0}
         for t in ("gif", "jpg"):
             st[t] = {"capacity": SLOTS, "used": [s for s in range(SLOTS) if media_meta(t, s)]}
-        self._annotate_storage(st)
-        return st
+        return self._annotate_storage(st)
 
-    def _annotate_storage(self, st):
+    @staticmethod
+    def _annotate_storage(st):
         for t in ("gif", "jpg"):
             items = []
             for s in range(SLOTS):
@@ -496,7 +538,8 @@ class App:
                 items.append({"slot": s, "used": s in st[t]["used"], "cached": meta is not None,
                               "name": meta["name"] if meta else None,
                               "bytes": meta["bytes"] if meta else None})
-            st[t]["items"] = items
+            st[t] = dict(st[t], items=items)
+        return st
 
     @staticmethod
     def _has_pillow():
@@ -523,11 +566,30 @@ class App:
             self.config = merge(self.config, upd)
             save_config(self.config)
 
+    def restore(self):
+        """Re-apply the saved configuration where the device cannot keep it by itself: the live
+        sensor feed (the panel keeps the last values forever otherwise) and the clock (set from
+        the host). A stored animation or wallpaper keeps playing without help."""
+        cfg = self.config
+        try:
+            if cfg["mode"] == "hwmon" and cfg["hwmon"].get("live"):
+                self.hwmon(dict(cfg["hwmon"], live=True))
+            elif cfg["mode"] == "slideshow" and cfg["slideshow"].get("source") == "clock":
+                self.show(dict(cfg["slideshow"], source="clock"))
+            else:
+                return None
+        except ApiError as e:
+            return str(e)
+        return cfg["mode"]
+
     # actions --------------------------------------------------------------------
     def display(self, body):
         fields = {}
         if "brightness" in body:
-            b = int(body["brightness"])
+            try:
+                b = int(body["brightness"])
+            except (TypeError, ValueError):
+                raise ApiError("brightness is 0..100")
             if not 0 <= b <= 100:
                 raise ApiError("brightness is 0..100")
             fields["brightness"] = b
@@ -569,6 +631,7 @@ class App:
             def send(dev):
                 dev.hwmon(page, 0, None, bg, fg)
                 dev.mode(MODE_HWMON)
+                settle(dev, MODE_HWMON)
             self.device.run(send)
         self.set_config(mode="hwmon", hwmon={"lines": spec, "count": len(spec), "bg": body.get("bg", "000000"),
                                                "fg": body.get("fg", "FFFFFF"), "live": live, "interval": interval})
@@ -584,6 +647,7 @@ class App:
             def go(dev):
                 dev.slideshow_list([("gif", slot)], duration)
                 dev.play("gif", slot)
+                settle(dev, KIND["gif"])
             slide["gif_slot"] = slot
         elif source == "jpg":
             slot = check_slot("jpg", body.get("slot"))
@@ -596,6 +660,7 @@ class App:
 
             def go(dev):
                 dev.banner("jpg", slot, texts, font, align, color, duration, x)
+                settle(dev, MODE_SLIDESHOW)
             slide["jpg_slot"] = slot
             slide["banner"] = {"lines": (texts + [""] * 6)[:6], "color": bn.get("color", "FFFFFFFF"),
                                "align": align, "x": x, "font": font}
@@ -606,6 +671,7 @@ class App:
                 dev.set_clock(h24=h24)
                 dev.slideshow_list([("clock", 1)], duration)
                 dev.play("clock", 1)
+                settle(dev, KIND["clock"])
             slide["h24"] = h24
         else:
             raise ApiError("source must be gif, jpg or clock")
@@ -634,13 +700,21 @@ class App:
         if not out.startswith(MAGIC[ftype]):
             raise ApiError(f"not a {ftype} file")
         t0 = time.monotonic()
-        self.device.run(lambda dev: dev.upload(out, ftype, slot))
+
+        def go(dev):
+            dev.upload(out, ftype, slot)
+            self.read_storage(dev)
+        self.device.run(go)
         save_media(ftype, slot, out, name)
         return {"type": ftype, "slot": slot, "bytes": len(out), "seconds": round(time.monotonic() - t0, 1)}
 
     def delete(self, ftype, slot):
         slot = check_slot(ftype, slot)
-        self.device.run(lambda dev: dev.delete(ftype, slot))
+        used = self.device.run(lambda dev: (dev.delete(ftype, slot), self.read_storage(dev))[1][ftype]["used"])
+        if slot in used:
+            # verified 2026-09-03: the cooler acknowledges the delete but keeps the file
+            # while it is on screen; the slot stays in the storage table
+            raise ApiError(f"{ftype} {slot} is on screen; show something else first, then delete it", 409)
         forget_media(ftype, slot)
         return {"type": ftype, "slot": slot}
 
@@ -675,6 +749,15 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
+
+    def check_origin(self):
+        """Browsers send Origin on cross-site POST/DELETE; refuse those, the API has no login."""
+        origin = self.headers.get("Origin")
+        if not origin:
+            return
+        host = urllib.parse.urlsplit(origin).netloc
+        if host != self.headers.get("Host", ""):
+            raise ApiError(f"cross-origin request from {origin} refused", 403)
 
     def read_body(self):
         n = int(self.headers.get("Content-Length") or 0)
@@ -714,7 +797,7 @@ class Handler(BaseHTTPRequestHandler):
         path, query = self.route()
         try:
             if path == "/api/status":
-                return self.send_json(self.app.status())
+                return self.send_json(self.app.status(storage=query.get("storage") in ("1", "true")))
             if path == "/api/sensors":
                 return self.send_json({"sensors": self.app.sensors.list()})
             if path.startswith("/api/media/"):
@@ -736,6 +819,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path, query = self.route()
         try:
+            self.check_origin()
             if path == "/api/upload":
                 return self.send_json(self.app.upload(query, self.read_body()))
             body = self.read_json()
@@ -762,6 +846,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         path, _ = self.route()
         try:
+            self.check_origin()
             parts = path.split("/")
             if path.startswith("/api/media/") and len(parts) == 5:
                 return self.send_json(self.app.delete(parts[3], parts[4]))
@@ -770,11 +855,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"error": str(e)}, e.status)
 
 
-def serve(host, port, demo=False, verbose=False):
+def serve(host, port, demo=False, verbose=False, restore=True):
     Handler.app = App(demo, verbose)
     httpd = ThreadingHTTPServer((host, port), Handler)
     httpd.daemon_threads = True
     print(f"ryujin-lcd-web: http://{host}:{port}/{'  (demo device)' if demo else ''}", flush=True)
+    if restore:
+        r = Handler.app.restore()
+        if r:
+            print(f"restored {r} from {CONFIG}" if r in ("hwmon", "slideshow") else f"could not restore the saved mode: {r}", flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -789,9 +878,10 @@ def main():
     ap.add_argument("--host", default="127.0.0.1", help="bind address (127.0.0.1; 0.0.0.0 for the LAN)")
     ap.add_argument("--port", type=int, default=8686)
     ap.add_argument("--demo", action="store_true", help="simulated device and sensors, no cooler needed")
+    ap.add_argument("--no-restore", action="store_true", help="do not re-apply the saved mode at start")
     ap.add_argument("-v", "--verbose", action="store_true", help="log requests and every HID report")
     a = ap.parse_args()
-    serve(a.host, a.port, a.demo, a.verbose)
+    serve(a.host, a.port, a.demo, a.verbose, not a.no_restore)
 
 
 if __name__ == "__main__":

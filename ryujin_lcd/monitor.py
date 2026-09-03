@@ -5,7 +5,9 @@
 Each LINE is LABEL=HWMON/SENSOR, up to three:
   Coolant=rog_ryujin/temp1    Pump=rog_ryujin/fan1    CPU=k10temp/temp1
 HWMON is the driver name in /sys/class/hwmon/*/name (looked up on every read, so a
-re-enumerated device keeps working), SENSOR the attribute without _input. Units and
+re-enumerated device keeps working), SENSOR the attribute without _input. When several
+devices share a name (three NVMe drives are all "nvme"), HWMON can be NAME:DEVICE with
+DEVICE the basename of /sys/class/hwmon/hwmonN/device, e.g. nvme:nvme1. Units and
 formatting follow the attribute type: temp (°C, 1 decimal), fan (RPM), in (V, 3 decimals),
 power (W), curr (A), freq (MHz). Without LINE arguments the file
 ~/.config/ryujin-lcd/monitor.conf is read (one LABEL=HWMON/SENSOR per line, # comments),
@@ -48,11 +50,24 @@ def parse_line(spec):
     return label, hw, attr, FORMATS[kind]
 
 
+def hwmon_id(d):
+    """NAME:DEVICE for a hwmon directory, e.g. nvme:nvme1 - tells apart devices that share a
+    driver name (several NVMe drives, several DIMMs)."""
+    try:
+        name = open(os.path.join(d, "name")).read().strip()
+    except OSError:
+        return None
+    dev = os.path.basename(os.path.realpath(os.path.join(d, "device"))) if os.path.exists(os.path.join(d, "device")) else ""
+    return f"{name}:{dev}" if dev else name
+
+
 def hwmon_path(name):
-    for n in glob.glob("/sys/class/hwmon/hwmon*/name"):
+    """Directory of the hwmon device called NAME, or NAME:DEVICE (see hwmon_id)."""
+    for n in sorted(glob.glob("/sys/class/hwmon/hwmon*/name")):
+        d = os.path.dirname(n)
         try:
-            if open(n).read().strip() == name:
-                return os.path.dirname(n)
+            if open(n).read().strip() == name or (":" in name and hwmon_id(d) == name):
+                return d
         except OSError:
             pass
     return None

@@ -27,7 +27,11 @@ done
 for arg in "$@"; do
   case "$arg" in
     --monitor) svc=ryujin-lcd-monitor ;;
-    --web) svc=ryujin-lcd-web ;;
+    --web) svc=ryujin-lcd-web
+           if systemctl --user is-enabled -q ryujin-lcd-monitor.service 2>/dev/null; then
+             echo "==> disabling ryujin-lcd-monitor (the web panel's live update replaces it)"
+             systemctl --user disable --now ryujin-lcd-monitor.service
+           fi ;;
     *) echo "unknown option $arg (--monitor, --web)"; exit 2 ;;
   esac
   echo "==> user service $svc"

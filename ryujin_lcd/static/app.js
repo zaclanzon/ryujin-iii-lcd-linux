@@ -56,22 +56,32 @@ function formFromConfig(cfg) {
              bg: (hw.bg || "000000").toUpperCase(), fg: (hw.fg || "FFFFFF").toUpperCase(), live: hw.live !== false, interval: +hw.interval || 2 },
     slideshow: {
       source: ["gif", "jpg", "clock"].includes(ss.source) ? ss.source : "gif",
-      gif_slot: ss.gif_slot ?? null, jpg_slot: ss.jpg_slot ?? null,
+      gif_slot: storedSlot("gif", ss.gif_slot), jpg_slot: storedSlot("jpg", ss.jpg_slot),
       duration: +ss.duration || 5, h24: !!ss.h24,
       banner: { lines: Array.from({ length: 6 }, (_, i) => (bn.lines || [])[i] || ""), color: rgba.slice(0, 6),
                 alpha: parseInt(rgba.slice(6, 8), 16), align: bn.align ? 1 : 0, x: bn.x ?? 8, font: bn.font ?? 3 },
     },
   };
 }
+function storedSlot(type, slot) {
+  if (slot == null) return null;
+  const st = state.status && state.status.storage;
+  return st && st[type] && st[type].items && !st[type].items[slot].used ? null : slot;
+}
 function isDirty() { return state.config && JSON.stringify(state.form) !== JSON.stringify(formFromConfig(state.config)); }
 
 // ---- load ---------------------------------------------------------------------------
-async function loadStatus() {
+let statusSeq = 0, sensorSeq = 0;
+async function loadStatus(storage = false) {
+  const seq = ++statusSeq;
+  let st;
   try {
-    state.status = await api("GET", "/api/status");
+    st = await api("GET", "/api/status" + (storage ? "?storage=1" : ""));
   } catch (e) {
-    state.status = { connected: false, error: e.message, storage: null, config: state.config };
+    st = { connected: false, error: e.message, storage: null, config: state.config };
   }
+  if (seq !== statusSeq) return;   // a newer poll already answered
+  state.status = st;
   if (state.status.config) {
     state.config = state.status.config;
     if (!state.form) { state.form = formFromConfig(state.config); hydrateDisplay(); }
@@ -79,7 +89,8 @@ async function loadStatus() {
   renderHero(); renderDashboard(); renderMedia(); renderPickers(); renderSettings(); renderAdvanced(); renderApplyBar(); drawPreview();
 }
 async function loadSensors() {
-  try { state.sensors = (await api("GET", "/api/sensors")).sensors || []; } catch (e) { /* keep old */ }
+  const seq = ++sensorSeq;
+  try { const s = (await api("GET", "/api/sensors")).sensors || []; if (seq !== sensorSeq) return; state.sensors = s; } catch (e) { /* keep old */ }
   renderSensors(); refreshSensorOptions(); drawPreview();
 }
 
@@ -102,9 +113,19 @@ function renderHero() {
     $("#storage-bar").style.width = (used / st.total_kb * 100).toFixed(1) + "%";
   } else { $("#storage-text").textContent = s.connected ? "—" : "offline"; $("#storage-bar").style.width = "0"; }
 }
+function onScreen(type, slot) {
+  const c = state.status && state.status.current;
+  if (!c) return false;
+  if (c.kind === type) return c.slot === slot;
+  return type === "jpg" && c.kind === "slideshow" && wallpaperSlot() === slot;
+}
+function wallpaperSlot() {
+  const ss = state.config && state.config.slideshow;
+  return state.config && state.config.mode === "slideshow" && ss.source === "jpg" ? ss.jpg_slot : null;
+}
 function describeCurrent(c) {
   if (c.kind === "hwmon") return "Hardware Monitor";
-  if (c.kind === "slideshow") return "Wallpaper" + (state.status.display && state.status.display.media.kind === "jpg" ? ` · JPG ${state.status.display.media.slot}` : "");
+  if (c.kind === "slideshow") { const s = wallpaperSlot(); return "Wallpaper" + (s != null ? ` · JPG ${s}` : ""); }
   if (c.kind === "gif") return `Animation · GIF ${c.slot}`;
   if (c.kind === "jpg") return `Wallpaper · JPG ${c.slot}`;
   if (c.kind === "clock") return "Clock";
@@ -211,7 +232,7 @@ function renderBannerLines() {
 }
 function tileHTML(type, item, opts = {}) {
   const key = `${type}-${item.slot}`;
-  const playing = state.status && state.status.display && state.status.display.media.kind === type && state.status.display.media.slot === item.slot && state.status.current && (state.status.current.kind === type || (type === "jpg" && state.status.current.kind === "slideshow"));
+  const playing = item.used && onScreen(type, item.slot);
   const cls = ["tile", opts.library ? "library" : "", opts.selected ? "selected" : "", playing ? "playing" : "", item.used ? (item.cached ? "" : "unknown") : "empty"].join(" ");
   let inner;
   if (!item.used) inner = `<span class="plus">+</span>`;
@@ -527,7 +548,7 @@ $$(".rail-item").forEach((b) => b.addEventListener("click", () => {
   $$(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === state.panel));
   renderApplyBar();
 }));
-$("#refresh").addEventListener("click", () => { loadStatus(); loadSensors(); });
+$("#refresh").addEventListener("click", () => { loadStatus(true); loadSensors(); });
 $("#mode").addEventListener("change", (e) => { state.form.mode = e.target.value; showModeCards(); onFormChange(); });
 $("#duration").addEventListener("change", (e) => { state.form.slideshow.duration = +e.target.value; onFormChange(); });
 $("#layouts").addEventListener("click", (e) => {

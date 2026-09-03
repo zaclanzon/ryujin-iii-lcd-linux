@@ -179,7 +179,9 @@ EC 73 FF                    end write             → EC 73, then event EE 13 00
 A 5785-byte JPG went as two 4096-byte bulk writes with an `EE 14` between
 them. Delete: `EC 72 01 01 00` (jpg slot 0) then `EC 73 03`, ack event
 `EE 13 10 03` in the capture, `EE 13 00 03` on Linux; the slot leaves the
-bitmap immediately. **Verified.**
+bitmap immediately. **Verified.** Exception, seen 2026-09-03: a file that is on
+screen (the wallpaper of the running slideshow) is acknowledged the same way
+but stays in the bitmap; switch the display to something else first.
 
 Size field: the capture only had files < 64 KiB (`7F 02 <u16 LE>`). A
 400 059-byte GIF sent as `7F 02 BB 1A 06` (u32 LE at bytes 3–6) was accepted
