@@ -238,7 +238,7 @@ function tileHTML(type, item, opts = {}) {
   if (opts.add) inner = `<span class="plus">+</span><span class="add-txt">Add ${type === "gif" ? "animation" : "wallpaper"}</span>`;
   else if (!item.used) inner = `<span class="plus">+</span>`;
   else if (item.cached) inner = `<img src="/api/media/${type}/${item.slot}?v=${item.bytes}" alt="">`;
-  else inner = `<span>no local copy</span>`;
+  else inner = opts.library ? "" : `<span>no local copy</span>`;
   const name = item.used && item.cached ? `<div class="name">${esc(item.name || "")}${item.bytes ? ` <span class="hint">${fmtBytes(item.bytes)}</span>` : ""}</div>` : "";
   const x = item.used && opts.deletable ? `<button class="x" data-act="delete" title="Delete">✕</button>` : "";
   const use = item.used && opts.library ? `<div class="use"><button class="btn primary small" data-act="show"><span>Show now</span></button>${item.cached ? "" : `<button class="btn small" data-act="thumb">Set thumbnail</button>`}</div>` : "";
