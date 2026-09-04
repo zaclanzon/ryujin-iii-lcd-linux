@@ -1,4 +1,4 @@
-# ryujin3-lcd
+# ryujin-iii-lcd-linux
 
 Drive the 3.5" LCD of the **ASUS ROG Ryujin III** AIO cooler (USB `0b05:1aa2`,
 firmware `AURJ2-S750-0108`) from Linux, without Armoury Crate.
@@ -31,7 +31,7 @@ Crate (below).
 ## Install
 
 ```
-git clone https://github.com/zaclanzon/ryujin3-lcd && cd ryujin3-lcd
+git clone https://github.com/zaclanzon/ryujin-iii-lcd-linux && cd ryujin-iii-lcd-linux
 ./install.sh                                  # venv + deps, udev rule (sudo), wrappers in ~/.local/bin
 ryujin-lcd info
 ryujin-lcd-web                                # http://127.0.0.1:8686/

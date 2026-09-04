@@ -1,6 +1,6 @@
 ROG RYUJIN III (0B05:1AA2) LCD - USB CAPTURE RUNBOOK (Windows side)
 ====================================================================
-Folder: C:\Claude\ryujin-capture      (Linux copy: capture/ in the ryujin3-lcd repo)
+Folder: C:\Claude\ryujin-capture      (Linux copy: capture/ in the ryujin-iii-lcd-linux repo)
 
 GOAL
   Record what Armoury Crate sends to the cooler when it drives the 3.5" LCD, so the protocol can be
