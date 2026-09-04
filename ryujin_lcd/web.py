@@ -38,6 +38,7 @@ import copy
 import datetime
 import functools
 import glob
+import hmac
 import io
 import json
 import math
@@ -528,14 +529,21 @@ def validate_config(cfg):
     rgb(hw.get("bg", "000000"))
     rgb(hw.get("fg", "FFFFFF"))
     parse_interval(hw.get("interval", 2))
-    try:
-        int(ss.get("duration"))
-    except (TypeError, ValueError):
-        raise ApiError("invalid slideshow duration")
+    bounded_integer(ss.get("duration"), 1, 255, "slideshow duration")
     if ss.get("source") not in ("gif", "jpg", "clock"):
         raise ApiError("invalid slideshow source")
     if not isinstance(ss.get("gif_slots"), list) or not isinstance(ss.get("banner"), dict):
         raise ApiError("invalid slideshow configuration")
+    for slot in ss["gif_slots"]:
+        check_slot("gif", slot)
+    if ss.get("jpg_slot") is not None:
+        check_slot("jpg", ss["jpg_slot"])
+    banner = ss["banner"]
+    if not isinstance(banner.get("lines"), list) or not all(isinstance(line, str) for line in banner["lines"]):
+        raise ApiError("invalid banner lines")
+    rgb(banner.get("color", "FFFFFFFF"), 4)
+    bounded_integer(banner.get("x", 8), 0, 319, "banner x")
+    bounded_integer(banner.get("font", 3), 0, 255, "banner font")
     boot = cfg.get("boot")
     if not isinstance(boot, dict) or boot.get("source") not in (None, "gif", "jpg"):
         raise ApiError("invalid power-on default")
@@ -617,12 +625,24 @@ def parse_interval(value):
     return interval
 
 
+def bounded_integer(value, low, high, label, clamp=False):
+    try:
+        number = int(value)
+    except (OverflowError, TypeError, ValueError):
+        raise ApiError(f"{label} must be an integer")
+    if clamp:
+        return max(low, min(high, number))
+    if not low <= number <= high:
+        raise ApiError(f"{label} must be {low}..{high}")
+    return number
+
+
 def check_slot(ftype, slot):
     if ftype not in FTYPE:
         raise ApiError("type must be gif or jpg")
     try:
         slot = int(slot)
-    except (TypeError, ValueError):
+    except (OverflowError, TypeError, ValueError):
         raise ApiError("slot must be a number")
     if not 0 <= slot < SLOTS:
         raise ApiError(f"slot must be 0..{SLOTS - 1}")
@@ -719,6 +739,7 @@ class App:
             return {"running": False}
         return {"running": True, "lines": m.last, "error": m.error, "interval": m.interval}
 
+    @serialized_action
     def stop_monitor(self):
         if self.monitor is not None:
             self.monitor.stop()
@@ -734,6 +755,7 @@ class App:
         return {"running": True, "slots": p.slots, "current": p.current,
                 "interval": p.interval, "error": p.error}
 
+    @serialized_action
     def stop_player(self):
         if self.player is not None:
             self.player.stop()
@@ -869,7 +891,7 @@ class App:
     @serialized_action
     def show(self, body):
         source = body.get("source")
-        duration = max(1, min(255, int(body.get("duration", 5))))
+        duration = bounded_integer(body.get("duration", 5), 1, 255, "duration", clamp=True)
         slide = {"source": source, "duration": duration}
         if source == "gif":
             slots = body.get("slots")
@@ -898,8 +920,8 @@ class App:
             texts = [str(t)[:48] for t in (bn.get("lines") or [])][:6]
             color = rgb(bn.get("color", "FFFFFFFF"), 4)
             align = 1 if bn.get("align") else 0
-            x = max(0, min(319, int(bn.get("x", 8))))
-            font = int(bn.get("font", 3))
+            x = bounded_integer(bn.get("x", 8), 0, 319, "banner x", clamp=True)
+            font = bounded_integer(bn.get("font", 3), 0, 255, "banner font")
 
             def go(dev):
                 dev.banner("jpg", slot, texts, font, align, color, duration, x)
@@ -1028,15 +1050,20 @@ class Handler(BaseHTTPRequestHandler):
             raise ApiError(f"cross-origin request from {origin} refused", 403)
 
     def check_access(self, require_auth=True):
+        hosts = self.headers.get_all("Host", [])
+        if len(hosts) != 1:
+            raise ApiError("exactly one Host header is required", 400)
         try:
-            host = urllib.parse.urlsplit("//" + self.headers.get("Host", "")).hostname
+            host = urllib.parse.urlsplit("//" + hosts[0]).hostname
         except ValueError:
             raise ApiError("invalid Host header", 400)
         if self.allowed_hosts is not None and host not in self.allowed_hosts:
             raise ApiError(f"host {host or '(missing)'} is not allowed", 403)
         if require_auth and self.auth_token:
-            supplied = self.headers.get("Authorization", "")
-            if supplied != f"Bearer {self.auth_token}":
+            authorization = self.headers.get_all("Authorization", [])
+            expected = f"Bearer {self.auth_token}"
+            if len(authorization) != 1 or not hmac.compare_digest(
+                    authorization[0].encode("utf-8"), expected.encode("utf-8")):
                 raise ApiError("authentication required", 401)
 
     def read_body(self):
@@ -1197,12 +1224,18 @@ def main():
     a = ap.parse_args()
     if a.import_crate:
         storage = None
+        dev = None
         try:
             dev = Ryujin(a.verbose)
             storage = parse_disk_info(dev.disk_info())
-            dev.close()
         except RyujinError as e:
             print(f"cooler not reachable ({e}); importing without checking the slots", file=sys.stderr)
+        finally:
+            if dev is not None:
+                try:
+                    dev.close()
+                except OSError:
+                    pass
         try:
             rows = import_crate(a.import_crate, storage)
         except ApiError as e:
