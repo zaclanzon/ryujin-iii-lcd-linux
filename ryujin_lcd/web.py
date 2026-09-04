@@ -71,7 +71,7 @@ DEFAULT_CONFIG = {
         "count": 3, "bg": "000000", "fg": "FFFFFF", "live": True, "interval": 2,
     },
     "slideshow": {
-        "source": "gif", "gif_slot": None, "jpg_slot": None, "duration": 5, "h24": False,
+        "source": "gif", "gif_slots": [], "jpg_slot": None, "duration": 5, "h24": False,
         "banner": {"lines": ["", "", "", "", "", ""], "color": "FFFFFFFF", "align": 0, "x": 8, "font": 3},
     },
 }
@@ -363,6 +363,46 @@ class LiveMonitor(threading.Thread):
         self.stop_event.set()
 
 
+class SlideshowPlayer(threading.Thread):
+    """Cycle several stored animations by playing each in turn, from the host.
+
+    Armoury Crate never used the device's own multi-entry list (only n=1 was ever captured),
+    so the rotation is driven here with playMedia, which are display commands, not flash writes.
+    Each play reports its slot, so the panel shows what is on screen."""
+
+    def __init__(self, device, slots, interval=5.0):
+        super().__init__(daemon=True, name="ryujin-slideshow")
+        self.device = device
+        self.slots = list(slots)
+        self.interval = max(1.0, float(interval))
+        self.stop_event = threading.Event()
+        self.current = None
+        self.error = None
+
+    def run(self):
+        i, first = 0, True
+        while not self.stop_event.is_set():
+            slot = self.slots[i % len(self.slots)]
+            try:
+                def go(dev, slot=slot, first=first):
+                    if first:
+                        dev.slideshow_list([("gif", slot)], int(self.interval))
+                    dev.play("gif", slot)
+                    settle(dev, KIND["gif"])
+                self.device.run(go)
+                self.current, self.error = slot, None
+            except ApiError as e:
+                self.error = str(e)
+                self.stop_event.wait(5)
+                continue
+            first = False
+            i += 1
+            self.stop_event.wait(self.interval)
+
+    def stop(self):
+        self.stop_event.set()
+
+
 # --- media cache and config -------------------------------------------------------------
 def media_path(ftype, slot):
     return os.path.join(DATA_DIR, "media", f"{ftype}-{slot}.{EXT[ftype]}")
@@ -540,6 +580,7 @@ class App:
         self.device = Device(demo, verbose)
         self.sensors = Sensors(demo)
         self.monitor = None
+        self.player = None
         self.config = load_config()
         self.cfg_lock = threading.Lock()
         self.firmware = None          # read once
@@ -551,8 +592,8 @@ class App:
         three-step handshake that the cooler occasionally leaves unanswered, so it is read
         on demand: after upload/delete, on request (storage=True) and at most once a minute."""
         out = {"demo": self.demo, "version": __version__, "connected": False, "error": self.device.error,
-               "monitor": self.monitor_state(), "config": self.config, "slots": SLOTS,
-               "pillow": self._has_pillow()}
+               "monitor": self.monitor_state(), "slideshow": self.player_state(),
+               "config": self.config, "slots": SLOTS, "pillow": self._has_pillow()}
         try:
             def q(dev):
                 if self.firmware is None:
@@ -619,6 +660,19 @@ class App:
             self.monitor.join(timeout=5)
             self.monitor = None
 
+    def player_state(self):
+        p = self.player
+        if p is None or not p.is_alive():
+            return {"running": False}
+        return {"running": True, "slots": p.slots, "current": p.current,
+                "interval": p.interval, "error": p.error}
+
+    def stop_player(self):
+        if self.player is not None:
+            self.player.stop()
+            self.player.join(timeout=5)
+            self.player = None
+
     def set_config(self, **upd):
         with self.cfg_lock:
             self.config = merge(self.config, upd)
@@ -626,14 +680,18 @@ class App:
 
     def restore(self):
         """Re-apply the saved configuration where the device cannot keep it by itself: the live
-        sensor feed (the panel keeps the last values forever otherwise) and the clock (set from
-        the host). A stored animation or wallpaper keeps playing without help."""
+        sensor feed (the panel keeps the last values forever otherwise), the clock (set from the
+        host), and a multi-animation slideshow (the rotation is host-driven). A single stored
+        animation or wallpaper keeps playing without help."""
         cfg = self.config
+        ss = cfg["slideshow"]
         try:
             if cfg["mode"] == "hwmon" and cfg["hwmon"].get("live"):
                 self.hwmon(dict(cfg["hwmon"], live=True))
-            elif cfg["mode"] == "slideshow" and cfg["slideshow"].get("source") == "clock":
-                self.show(dict(cfg["slideshow"], source="clock"))
+            elif cfg["mode"] == "slideshow" and ss.get("source") == "clock":
+                self.show(dict(ss, source="clock"))
+            elif cfg["mode"] == "slideshow" and ss.get("source") == "gif" and len(ss.get("gif_slots") or []) > 1:
+                self.show({"source": "gif", "slots": ss["gif_slots"], "duration": ss.get("duration", 5)})
             else:
                 return None
         except ApiError as e:
@@ -682,6 +740,7 @@ class App:
                 spec.append({"label": label, "value": value})
             page.append((label, add_unit_glyphs(value)))
         self.stop_monitor()
+        self.stop_player()
         if live and all("sensor" in s for s in spec):
             self.monitor = LiveMonitor(self.device, self.sensors, spec, bg, fg, interval)
             self.monitor.start()
@@ -700,13 +759,26 @@ class App:
         duration = max(1, min(255, int(body.get("duration", 5))))
         slide = {"source": source, "duration": duration}
         if source == "gif":
-            slot = check_slot("gif", body.get("slot"))
-
-            def go(dev):
-                dev.slideshow_list([("gif", slot)], duration)
-                dev.play("gif", slot)
-                settle(dev, KIND["gif"])
-            slide["gif_slot"] = slot
+            slots = body.get("slots")
+            if slots is None and body.get("slot") is not None:
+                slots = [body["slot"]]
+            if not slots:
+                raise ApiError("select at least one animation")
+            slots = [check_slot("gif", s) for s in slots][:SLOTS]
+            slide["gif_slots"] = slots
+            self.stop_monitor()
+            self.stop_player()
+            if len(slots) == 1:
+                def go(dev):
+                    dev.slideshow_list([("gif", slots[0])], duration)
+                    dev.play("gif", slots[0])
+                    settle(dev, KIND["gif"])
+                self.device.run(go)
+            else:
+                self.player = SlideshowPlayer(self.device, slots, duration)
+                self.player.start()
+            self.set_config(mode="slideshow", slideshow=slide)
+            return {"ok": True, "slideshow": self.player_state()}
         elif source == "jpg":
             slot = check_slot("jpg", body.get("slot"))
             bn = body.get("banner") or {}
@@ -734,6 +806,7 @@ class App:
         else:
             raise ApiError("source must be gif, jpg or clock")
         self.stop_monitor()
+        self.stop_player()
         self.device.run(go)
         self.set_config(mode="slideshow", slideshow=slide)
         return {"ok": True}
@@ -911,7 +984,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(self.app.raw(body))
             if path == "/api/monitor/stop":
                 self.app.stop_monitor()
-                return self.send_json({"monitor": self.app.monitor_state()})
+                self.app.stop_player()
+                return self.send_json({"monitor": self.app.monitor_state(),
+                                       "slideshow": self.app.player_state()})
             if path == "/api/config":
                 self.app.set_config(**body)
                 return self.send_json({"config": self.app.config})
@@ -948,6 +1023,7 @@ def serve(host, port, demo=False, verbose=False, restore=True):
         pass
     finally:
         Handler.app.stop_monitor()
+        Handler.app.stop_player()
         Handler.app.device.drop()
 
 

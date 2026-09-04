@@ -239,6 +239,7 @@ label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-
 .tile.selected { border-color: var(--rog); box-shadow: 0 0 0 1px var(--rog), 0 0 18px var(--rog-dim); }
 .tile.selected::after { content: ""; position: absolute; right: -14px; bottom: -14px; width: 28px; height: 28px; background: var(--rog); transform: rotate(45deg); }
 .tile.selected::before { content: "✓"; position: absolute; right: 3px; bottom: 1px; z-index: 1; font-size: 11px; color: #fff; font-weight: 700; }
+.tile .order { position: absolute; right: 6px; top: 6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--rog); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
 .tile.playing .slot { color: var(--ok); }
 .tile.empty { border-style: dashed; color: var(--muted); }
 .tile.empty .plus { font-size: 30px; font-weight: 200; line-height: 1; }

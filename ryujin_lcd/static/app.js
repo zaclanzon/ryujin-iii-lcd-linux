@@ -56,7 +56,8 @@ function formFromConfig(cfg) {
              bg: (hw.bg || "000000").toUpperCase(), fg: (hw.fg || "FFFFFF").toUpperCase(), live: hw.live !== false, interval: +hw.interval || 2 },
     slideshow: {
       source: ["gif", "jpg", "clock"].includes(ss.source) ? ss.source : "gif",
-      gif_slot: storedSlot("gif", ss.gif_slot), jpg_slot: storedSlot("jpg", ss.jpg_slot),
+      gif_slots: storedSlots("gif", Array.isArray(ss.gif_slots) ? ss.gif_slots : (ss.gif_slot != null ? [ss.gif_slot] : [])),
+      jpg_slot: storedSlot("jpg", ss.jpg_slot),
       duration: +ss.duration || 5, h24: !!ss.h24,
       banner: { lines: Array.from({ length: 6 }, (_, i) => (bn.lines || [])[i] || ""), color: rgba.slice(0, 6),
                 alpha: parseInt(rgba.slice(6, 8), 16), align: bn.align ? 1 : 0, x: bn.x ?? 8, font: bn.font ?? 3 },
@@ -67,6 +68,11 @@ function storedSlot(type, slot) {
   if (slot == null) return null;
   const st = state.status && state.status.storage;
   return st && st[type] && st[type].items && !st[type].items[slot].used ? null : slot;
+}
+function storedSlots(type, slots) {   // keep only slots the device still lists as used, in order, no dups
+  const st = state.status && state.status.storage, items = st && st[type] && st[type].items;
+  const seen = new Set();
+  return (slots || []).filter((s) => s != null && !seen.has(s) && seen.add(s) && (!items || items[s].used));
 }
 function isDirty() { return state.config && JSON.stringify(state.form) !== JSON.stringify(formFromConfig(state.config)); }
 
@@ -242,7 +248,8 @@ function tileHTML(type, item, opts = {}) {
   const name = item.used && item.cached ? `<div class="name">${esc(item.name || "")}${item.bytes ? ` <span class="hint">${fmtBytes(item.bytes)}</span>` : ""}</div>` : "";
   const x = item.used && opts.deletable ? `<button class="x" data-act="delete" title="Delete">✕</button>` : "";
   const use = item.used && opts.library ? `<div class="use"><button class="btn primary small" data-act="show"><span>Show now</span></button>${item.cached ? "" : `<button class="btn small" data-act="thumb">Set thumbnail</button>`}</div>` : "";
-  return `<div class="${cls}" role="button" tabindex="0" data-type="${type}" data-slot="${item.slot}" data-key="${key}" data-used="${item.used ? 1 : 0}"><span class="slot">${type.toUpperCase()} ${item.slot}</span>${inner}${name}${x}${use}</div>`;
+  const order = opts.order ? `<span class="order" title="position in the rotation">${opts.order}</span>` : "";
+  return `<div class="${cls}" role="button" tabindex="0" data-type="${type}" data-slot="${item.slot}" data-key="${key}" data-used="${item.used ? 1 : 0}"><span class="slot">${type.toUpperCase()} ${item.slot}</span>${inner}${name}${x}${use}${order}</div>`;
 }
 function slotItems(type) {
   const st = state.status && state.status.storage;
@@ -251,16 +258,21 @@ function slotItems(type) {
 }
 // the slideshow pickers show what is stored plus one "+" tile for the next free slot;
 // the Media page shows the whole slot map
-function pickerHTML(type, selected) {
+function pickerHTML(type, selected) {   // selected: array (rotation order) for multi, or a single slot / null
+  const list = Array.isArray(selected) ? selected : (selected == null ? [] : [selected]);
+  const multi = Array.isArray(selected);
   const items = slotItems(type), free = items.find((it) => !it.used);
-  const html = items.filter((it) => it.used).map((it) => tileHTML(type, it, { selected: selected === it.slot }));
+  const html = items.filter((it) => it.used).map((it) => {
+    const pos = list.indexOf(it.slot);
+    return tileHTML(type, it, { selected: pos >= 0, order: multi && list.length > 1 && pos >= 0 ? pos + 1 : 0 });
+  });
   if (free) html.push(tileHTML(type, free, { add: true }));
   return html.join("");
 }
 function renderPickers() {
   if (!state.form) return;
   const f = state.form;
-  $("#gif-picker").innerHTML = pickerHTML("gif", f.slideshow.gif_slot);
+  $("#gif-picker").innerHTML = pickerHTML("gif", f.slideshow.gif_slots);
   $("#jpg-picker").innerHTML = pickerHTML("jpg", f.slideshow.jpg_slot);
   const anim = state.settings ? state.settings.anim_slot : null;
   $("#standby-picker").innerHTML = slotItems("gif").filter((it) => it.used).map((it) => tileHTML("gif", it, { selected: anim === it.slot })).join("")
@@ -294,14 +306,16 @@ async function apply() {
       toast(r.monitor && r.monitor.running ? "Hardware monitor applied, live feed running." : "Hardware monitor applied.");
     } else {
       const ss = f.slideshow, body = { source: ss.source, duration: ss.duration, h24: ss.h24 };
-      if (ss.source === "gif") { if (ss.gif_slot == null) throw new Error("select an animation"); body.slot = ss.gif_slot; }
+      if (ss.source === "gif") { if (!ss.gif_slots.length) throw new Error("select at least one animation"); body.slots = ss.gif_slots; }
       if (ss.source === "jpg") {
         if (ss.jpg_slot == null) throw new Error("select a wallpaper");
         body.slot = ss.jpg_slot;
         body.banner = { lines: ss.banner.lines, color: ss.banner.color + ss.banner.alpha.toString(16).padStart(2, "0").toUpperCase(), align: ss.banner.align, x: ss.banner.x, font: ss.banner.font };
       }
       await api("POST", "/api/show", body);
-      toast(`${KIND_LABEL[ss.source]} applied.`);
+      toast(ss.source === "gif" && ss.gif_slots.length > 1
+        ? `Slideshow applied: ${ss.gif_slots.length} animations, ${ss.duration}s each.`
+        : `${KIND_LABEL[ss.source]} applied.`);
     }
     await loadStatus();
     state.form = formFromConfig(state.config); hydrateDisplay(); renderApplyBar();
@@ -355,8 +369,10 @@ function drawPreview() {
     };
     draw(); state.clockTimer = setInterval(draw, 1000);
   } else {
-    const type = f.slideshow.source, slot = type === "gif" ? f.slideshow.gif_slot : f.slideshow.jpg_slot;
-    caption = `Preview · ${KIND_LABEL[type]}${slot != null ? " " + slot : ""}`;
+    const type = f.slideshow.source, gifs = f.slideshow.gif_slots;
+    const slot = type === "gif" ? (gifs.length ? gifs[0] : null) : f.slideshow.jpg_slot;
+    const extra = type === "gif" && gifs.length > 1 ? ` +${gifs.length - 1} more` : "";
+    caption = `Preview · ${KIND_LABEL[type]}${slot != null ? " " + slot : ""}${extra}`;
     if (slot == null) { noSignal(ctx, `SELECT ${type === "gif" ? "AN ANIMATION" : "A WALLPAPER"}`); }
     else {
       const im = imageFor(type, slot);
@@ -449,7 +465,7 @@ function doUpload() {
     let d = {}; try { d = JSON.parse(xhr.responseText); } catch (e) { /* ignore */ }
     if (xhr.status >= 200 && xhr.status < 300) {
       toast(p.thumb ? `Thumbnail set for ${p.type.toUpperCase()} slot ${p.slot}.` : `Stored ${fmtBytes(d.bytes)} in ${p.type.toUpperCase()} slot ${p.slot} (${d.seconds}s).`);
-      if (p.type === "gif" && state.form.slideshow.gif_slot == null) state.form.slideshow.gif_slot = p.slot;
+      if (p.type === "gif" && !state.form.slideshow.gif_slots.includes(p.slot)) state.form.slideshow.gif_slots.push(p.slot);
       if (p.type === "jpg" && state.form.slideshow.jpg_slot == null) state.form.slideshow.jpg_slot = p.slot;
     } else toast(d.error || `upload failed (${xhr.status})`, "err", 7000);
     closeModals(); await loadStatus();
@@ -474,13 +490,16 @@ async function deleteMedia(type, slot) {
     busy(`Deleting ${type.toUpperCase()} slot ${slot}…`, 50);
     await api("DELETE", `/api/media/${type}/${slot}`);
     toast(`Deleted ${type.toUpperCase()} slot ${slot}.`);
-    if (state.form.slideshow[type + "_slot"] === slot) state.form.slideshow[type + "_slot"] = null;
+    const ss = state.form.slideshow;
+    if (type === "gif") { const i = ss.gif_slots.indexOf(slot); if (i >= 0) ss.gif_slots.splice(i, 1); }
+    else if (ss.jpg_slot === slot) ss.jpg_slot = null;
   } catch (e) { toast(e.message, "err", 6000); }
   closeModals(); await loadStatus();
 }
 async function showNow(type, slot) {
   const ss = state.form.slideshow;
-  state.form.mode = "slideshow"; ss.source = type; ss[type + "_slot"] = slot;
+  state.form.mode = "slideshow"; ss.source = type;
+  if (type === "gif") ss.gif_slots = [slot]; else ss.jpg_slot = slot;
   hydrateDisplay(); await apply();
 }
 function onTileClick(e, opts) {
@@ -495,7 +514,7 @@ function onTileClick(e, opts) {
   opts.select(type, slot);
 }
 const TILE_HANDLERS = {
-  "#gif-picker": { select: (t, s) => { state.form.slideshow.gif_slot = s; renderPickers(); onFormChange(); } },
+  "#gif-picker": { select: (t, s) => { const a = state.form.slideshow.gif_slots, i = a.indexOf(s); if (i >= 0) a.splice(i, 1); else a.push(s); renderPickers(); onFormChange(); } },
   "#jpg-picker": { select: (t, s) => { state.form.slideshow.jpg_slot = s; renderPickers(); onFormChange(); } },
   "#gif-library": { select: () => {} },
   "#jpg-library": { select: () => {} },
