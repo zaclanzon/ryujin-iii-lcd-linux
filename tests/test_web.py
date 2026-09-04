@@ -129,6 +129,11 @@ def test_structurally_invalid_saved_config_falls_back_to_defaults(tmp_path, monk
     {"hwmon": {"lines": [{"label": "CPU", "sensor": 123}]}},
     {"hwmon": {"bg": None}},
     {"hwmon": {"interval": "not-a-number"}},
+    {"slideshow": {"duration": float("inf")}},
+    {"slideshow": {"gif_slots": ["bad"]}},
+    {"slideshow": {"gif_slots": [float("inf")]}},
+    {"slideshow": {"banner": {"color": None}}},
+    {"slideshow": {"banner": {"x": "bad"}}},
 ])
 def test_malformed_nested_saved_config_falls_back_to_defaults(tmp_path, monkeypatch, update):
     config = tmp_path / "web.json"
@@ -136,6 +141,15 @@ def test_malformed_nested_saved_config_falls_back_to_defaults(tmp_path, monkeypa
     monkeypatch.setattr(web, "CONFIG", str(config))
 
     assert web.load_config() == web.DEFAULT_CONFIG
+
+
+@pytest.mark.parametrize("body", [
+    {"source": "clock", "duration": float("inf")},
+    {"source": "jpg", "slot": 0, "banner": {"x": "bad"}},
+])
+def test_show_converts_invalid_numeric_fields_to_api_errors(body):
+    with pytest.raises(ApiError):
+        App(demo=True).show(body)
 
 
 def test_loopback_server_rejects_unexpected_host_header():
@@ -166,6 +180,22 @@ def test_malformed_host_header_is_rejected_cleanly():
     assert "host" in body["error"].lower()
 
 
+def test_duplicate_host_headers_are_rejected():
+    with running_server(App(demo=True)) as base:
+        parsed = urllib.parse.urlsplit(base)
+        connection = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=1)
+        connection.putrequest("GET", "/api/status", skip_host=True)
+        connection.putheader("Host", "127.0.0.1")
+        connection.putheader("Host", "attacker.example")
+        connection.endheaders()
+        response = connection.getresponse()
+        body = json.load(response)
+        connection.close()
+
+    assert response.status == 400
+    assert "host" in body["error"].lower()
+
+
 def test_remote_server_requires_bearer_token_for_api_reads():
     with running_server(App(demo=True), allowed_hosts=None, auth_token="secret") as base:
         denied, _ = get_json(base, "/api/status")
@@ -174,6 +204,33 @@ def test_remote_server_requires_bearer_token_for_api_reads():
     assert denied == 401
     assert allowed == 200
     assert body["demo"] is True
+
+
+def test_duplicate_authorization_headers_are_rejected():
+    with running_server(App(demo=True), allowed_hosts=None, auth_token="secret") as base:
+        parsed = urllib.parse.urlsplit(base)
+        connection = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=1)
+        connection.putrequest("GET", "/api/status")
+        connection.putheader("Authorization", "Bearer secret")
+        connection.putheader("Authorization", "Bearer secret")
+        connection.endheaders()
+        response = connection.getresponse()
+        connection.close()
+
+    assert response.status == 401
+
+
+def test_non_ascii_authorization_header_is_rejected_cleanly():
+    with running_server(App(demo=True), allowed_hosts=None, auth_token="secret") as base:
+        parsed = urllib.parse.urlsplit(base)
+        connection = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=1)
+        connection.request("GET", "/api/status", headers={"Authorization": "Bearer s\N{LATIN SMALL LETTER E WITH ACUTE}cret"})
+        response = connection.getresponse()
+        body = json.load(response)
+        connection.close()
+
+    assert response.status == 401
+    assert "authentication" in body["error"].lower()
 
 
 def test_non_loopback_bind_requires_token():
@@ -240,6 +297,32 @@ def test_worker_reference_is_retained_when_stop_times_out():
         assert getattr(app, attr) is worker
 
 
+def test_monitor_stop_is_serialized_with_mode_changes():
+    class Worker:
+        def stop(self):
+            pass
+
+        def join(self, timeout=None):
+            pass
+
+        def is_alive(self):
+            return False
+
+    app = App(demo=True)
+    app.monitor = Worker()
+    finished = threading.Event()
+    app.action_lock.acquire()
+    thread = threading.Thread(target=lambda: (app.stop_monitor(), finished.set()))
+    thread.start()
+    try:
+        assert not finished.wait(0.05)
+    finally:
+        app.action_lock.release()
+        thread.join(timeout=1)
+
+    assert finished.is_set()
+
+
 def test_concurrent_slideshow_changes_leave_only_one_worker(monkeypatch):
     instances = []
 
@@ -287,3 +370,24 @@ def test_concurrent_slideshow_changes_leave_only_one_worker(monkeypatch):
         thread.join()
 
     assert sum(player.is_alive() for player in instances) == 1
+
+
+def test_import_crate_probe_closes_device_after_disk_error(monkeypatch, tmp_path):
+    class Probe:
+        def __init__(self):
+            self.closed = False
+
+        def disk_info(self):
+            raise web.RyujinError("probe failed")
+
+        def close(self):
+            self.closed = True
+
+    probe = Probe()
+    monkeypatch.setattr(web, "Ryujin", lambda _verbose: probe)
+    monkeypatch.setattr(web, "import_crate", lambda _root, _storage: [])
+    monkeypatch.setattr(web.sys, "argv", ["ryujin-lcd-web", "--import-crate", str(tmp_path)])
+
+    web.main()
+
+    assert probe.closed

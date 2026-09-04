@@ -18,6 +18,7 @@ SLOTS = 16
 # "get" commands answer with a different command byte; everything else echoes.
 REPLY_ID = {0x82: 0x02, 0x99: 0x19, 0x9A: 0x1A, 0xA0: 0x20, 0xA1: 0x21,
             0xD0: 0x50, 0xDC: 0x5C, 0xF1: 0x71}
+MIN_REPLY = {0x82: 3, 0xDC: 16, 0xD0: 8, 0xF1: 27, 0x7F: 5}
 KIND = {"gif": 0x10, "jpg": 0x04, "clock": 0x08}   # setSlideshowList / playMedia [kind]
 MTYPE = {"gif": 0x01, "jpg": 0x00, "clock": 0x00}  # ... [type]
 FTYPE = {"gif": 0x02, "jpg": 0x01}                 # SetFileIndex file type
@@ -151,6 +152,11 @@ class Ryujin:
             if rep[0] != CMD:
                 continue
             if rep[1] == want:
+                minimum = MIN_REPLY.get(payload[0], 2)
+                if len(rep) < minimum:
+                    raise RyujinError(
+                        f"short reply to command {payload[0]:02X}: {len(rep)}/{minimum} bytes"
+                    )
                 self.log("R", hexs(trim(rep)))
                 return rep
             self.log("  skip", hexs(trim(rep)))     # hwmon driver traffic (0x19/0x1A/0x20/0x21)
@@ -188,10 +194,12 @@ class Ryujin:
         self.log(f"B {n} bytes -> EP 0x01")
 
     def close(self):
-        if self._usb is not None:
-            import usb.util
-            usb.util.dispose_resources(self._usb)
-        os.close(self.fd)
+        try:
+            if self._usb is not None:
+                import usb.util
+                usb.util.dispose_resources(self._usb)
+        finally:
+            os.close(self.fd)
 
     # --- protocol --------------------------------------------------------------
     def firmware(self):
@@ -222,6 +230,9 @@ class Ryujin:
         if ftype not in FTYPE:
             raise RyujinError("file type must be gif or jpg")
         slot = validate_slot(slot)
+        size = len(data)
+        if not 0 <= size <= 0xFFFFFFFF:
+            raise RyujinError("upload is too large for the 32-bit wire size")
         self.disk_info()
         begun = False
         try:
@@ -241,11 +252,13 @@ class Ryujin:
                 raise RyujinError("device never acknowledged the file write")
             # captured: 7F 02 <size u16 LE>; the upper bytes were 0 for every captured file, so a
             # u32 LE here is wire-identical for < 64 KiB and the hypothesis for larger files
-            r = self.cmd(b"\x7F\x02" + struct.pack("<I", len(data)))
+            r = self.cmd(b"\x7F\x02" + struct.pack("<I", size))
             if len(r) < 5:
                 raise RyujinError(f"short chunk-size reply ({len(r)} bytes)")
             chunk = struct.unpack("<H", r[3:5])[0] or CHUNK
-            for off in range(0, len(data), chunk):
+            if not 1 <= chunk <= CHUNK:
+                raise RyujinError(f"invalid device chunk size {chunk} (maximum {CHUNK})")
+            for off in range(0, size, chunk):
                 self.bulk_write(data[off:off + chunk].ljust(chunk, b"\0"))
                 self.wait_event(b"\x14\x00\x00")
             self.cmd(b"\x73\xFF")                               # end write

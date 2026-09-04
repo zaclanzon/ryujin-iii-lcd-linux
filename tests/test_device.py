@@ -34,6 +34,16 @@ def test_cmd_converts_short_hid_reply_to_protocol_error(monkeypatch):
         device.cmd(b"\xdc")
 
 
+def test_cmd_rejects_command_specific_short_reply(monkeypatch):
+    device = bare_device()
+    device.fd = 7
+    device._read = lambda _timeout: b"\xec\x5c"
+    monkeypatch.setattr(os, "write", lambda _fd, data: len(data))
+
+    with pytest.raises(RyujinError, match="short reply"):
+        device.cmd(b"\xdc")
+
+
 def test_cmd_rejects_short_hid_write(monkeypatch):
     device = bare_device()
     device.fd = 7
@@ -140,6 +150,38 @@ def test_failed_begin_attempts_to_close_write_transaction():
         device.upload(b"payload", "gif", 0)
 
     assert b"\x73\xff" in calls
+
+
+def test_upload_rejects_files_larger_than_wire_size():
+    class HugeData:
+        def __len__(self):
+            return 1 << 32
+
+    device = bare_device()
+    device.disk_info = lambda: None
+    device.cmd = lambda payload, timeout=3.0: bytes([0xEC, bytes(payload)[0]]) + bytes(63)
+    device.wait_event = lambda *args, **kwargs: True
+
+    with pytest.raises(RyujinError, match="too large"):
+        device.upload(HugeData(), "gif", 0)
+
+
+def test_upload_rejects_device_chunk_above_transfer_limit():
+    device = bare_device()
+    device.disk_info = lambda: None
+
+    def command(payload, timeout=3.0):
+        payload = bytes(payload)
+        if payload.startswith(b"\x7f\x02"):
+            return bytes([0xEC, 0x7F, 0, 0x89, 0x13]) + bytes(60)
+        return bytes([0xEC, payload[0]]) + bytes(63)
+
+    device.cmd = command
+    device.wait_event = lambda *args, **kwargs: True
+    device.bulk_write = lambda _data: pytest.fail("invalid chunk size reached bulk transfer")
+
+    with pytest.raises(RyujinError, match="chunk"):
+        device.upload(b"payload", "gif", 0)
 
 
 def test_upload_requires_success_status_in_chunk_acknowledgement():
