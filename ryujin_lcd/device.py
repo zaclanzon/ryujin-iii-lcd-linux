@@ -1,5 +1,6 @@
 """ROG Ryujin III (0b05:1aa2) LCD over hidraw + bulk USB. Protocol: docs/protocol.md."""
 import datetime
+import fcntl
 import glob
 import io
 import os
@@ -13,6 +14,7 @@ HID_ID = "HID_ID=0003:00000B05:00001AA2"
 CMD, EVENT = 0xEC, 0xEE
 WIDTH, HEIGHT = 320, 240
 CHUNK = 4096
+SLOTS = 16
 
 # "get" commands answer with a different command byte; everything else echoes.
 REPLY_ID = {0x82: 0x02, 0x99: 0x19, 0x9A: 0x1A, 0xA0: 0x20, 0xA1: 0x21,
@@ -51,20 +53,91 @@ class RyujinError(Exception):
     """A command, event or transfer the device did not complete."""
 
 
+def validate_slot(slot):
+    if not isinstance(slot, int) or isinstance(slot, bool) or not 0 <= slot < SLOTS:
+        raise RyujinError(f"slot must be 0..{SLOTS - 1}")
+    return slot
+
+
+def usb_identity_for_path(path):
+    """Return (bus, address, sysfs USB-device path) for a HID descendant."""
+    current = os.path.realpath(path)
+    while current != os.path.dirname(current):
+        try:
+            with open(os.path.join(current, "idVendor")) as f:
+                vid = int(f.read().strip(), 16)
+            with open(os.path.join(current, "idProduct")) as f:
+                pid = int(f.read().strip(), 16)
+            if (vid, pid) == (VID, PID):
+                with open(os.path.join(current, "busnum")) as f:
+                    bus = int(f.read())
+                with open(os.path.join(current, "devnum")) as f:
+                    address = int(f.read())
+                return bus, address, current
+        except (OSError, ValueError):
+            pass
+        current = os.path.dirname(current)
+    raise RyujinError("cannot resolve the cooler's physical USB device")
+
+
+def select_usb_device(devices, bus, address):
+    for device in devices or ():
+        if getattr(device, "bus", None) == bus and getattr(device, "address", None) == address:
+            return device
+    raise RyujinError(f"cannot find bulk interface for cooler on USB bus {bus} address {address}")
+
+
+def acquire_process_lock(path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    flags = os.O_RDWR | os.O_CREAT | os.O_CLOEXEC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        fd = os.open(path, flags, 0o600)
+    except OSError as error:
+        raise RyujinError(f"cannot open process lock {path}: {error.strerror}") from error
+    lock = os.fdopen(fd, "r+")
+    try:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        lock.close()
+        raise RyujinError("cooler is already in use by another process")
+    lock.seek(0)
+    lock.truncate()
+    lock.write(str(os.getpid()))
+    lock.flush()
+    return lock
+
+
 def find_hidraw():
     for uev in sorted(glob.glob("/sys/class/hidraw/hidraw*/device/uevent")):
-        if HID_ID in open(uev).read().upper():
-            return "/dev/" + uev.split("/")[4]
+        try:
+            with open(uev) as f:
+                matches = HID_ID in f.read().upper()
+        except OSError:
+            continue
+        if matches:
+            bus, address, usb_path = usb_identity_for_path(os.path.dirname(uev))
+            return "/dev/" + uev.split("/")[4], bus, address, usb_path
     raise RyujinError("no hidraw node for 0b05:1aa2 (is the cooler connected?)")
 
 
 class Ryujin:
     def __init__(self, verbose=False):
-        self.path = find_hidraw()
+        self.path, self.usb_bus, self.usb_address, usb_path = find_hidraw()
+        runtime = os.environ.get("XDG_RUNTIME_DIR")
+        if not runtime or not os.path.isabs(runtime):
+            runtime = "/tmp"
+        lock_name = os.path.basename(usb_path).replace("/", "_")
+        self._process_lock = acquire_process_lock(os.path.join(runtime, f"ryujin-lcd-{lock_name}.lock"))
         try:
             self.fd = os.open(self.path, os.O_RDWR | os.O_NONBLOCK)
         except PermissionError:
+            self._process_lock.close()
             raise RyujinError(f"{self.path}: permission denied (run as root or install udev/60-ryujin-lcd.rules)")
+        except OSError:
+            self._process_lock.close()
+            raise
         self.verbose = verbose
         self.events = []
         self._usb = None
@@ -80,6 +153,8 @@ class Ryujin:
             return None
         rep = os.read(self.fd, 65)
         if rep and rep[0] == EVENT:
+            if len(rep) < 2:
+                raise RyujinError(f"short HID event report ({len(rep)} bytes)")
             self.log("  ev", hexs(trim(rep)))
             self.events.append(rep)
         return rep
@@ -87,18 +162,25 @@ class Ryujin:
     def cmd(self, payload, timeout=3.0):
         """Send one 0xEC command (payload = bytes after the report id), return its reply."""
         payload = bytes(payload)
-        assert 1 <= len(payload) <= 64, len(payload)
+        if not 1 <= len(payload) <= 64:
+            raise RyujinError(f"command payload must contain 1 to 64 bytes (got {len(payload)})")
         want = REPLY_ID.get(payload[0], payload[0])
         report = bytes([CMD]) + payload.ljust(64, b"\0")
         self.log("W", hexs(trim(report)))
-        os.write(self.fd, report)
+        written = os.write(self.fd, report)
+        if written != len(report):
+            raise RyujinError(f"short HID write: {written}/{len(report)} bytes")
         end = time.monotonic() + timeout
         while True:
             left = end - time.monotonic()
             if left <= 0:
                 raise RyujinError(f"no reply to command {payload[0]:02X} within {timeout}s")
             rep = self._read(left)
-            if rep is None or rep[0] != CMD:
+            if rep is None:
+                continue
+            if len(rep) < 2:
+                raise RyujinError(f"short HID report ({len(rep)} bytes)")
+            if rep[0] != CMD:
                 continue
             if rep[1] == want:
                 self.log("R", hexs(trim(rep)))
@@ -111,6 +193,8 @@ class Ryujin:
         end = time.monotonic() + timeout
         while True:
             for i, ev in enumerate(self.events):
+                if len(ev) < 1 + len(prefix):
+                    raise RyujinError(f"short HID event report ({len(ev)} bytes)")
                 if all(p is None or ev[1 + j] == p for j, p in enumerate(prefix)):
                     return self.events.pop(i)
             left = end - time.monotonic()
@@ -125,9 +209,8 @@ class Ryujin:
         import usb.core
         import usb.util
         if self._usb is None:
-            self._usb = usb.core.find(idVendor=VID, idProduct=PID)
-            if self._usb is None:
-                raise RyujinError("libusb cannot see 0b05:1aa2")
+            devices = usb.core.find(find_all=True, idVendor=VID, idProduct=PID)
+            self._usb = select_usb_device(devices, self.usb_bus, self.usb_address)
         try:
             n = self._usb.write(0x01, data, timeout=5000)     # claims interface 0 (no kernel driver on it)
         except usb.core.USBError as e:
@@ -137,10 +220,13 @@ class Ryujin:
         self.log(f"B {n} bytes -> EP 0x01")
 
     def close(self):
-        if self._usb is not None:
-            import usb.util
-            usb.util.dispose_resources(self._usb)
-        os.close(self.fd)
+        try:
+            if self._usb is not None:
+                import usb.util
+                usb.util.dispose_resources(self._usb)
+            os.close(self.fd)
+        finally:
+            self._process_lock.close()
 
     # --- protocol --------------------------------------------------------------
     def firmware(self):
@@ -168,42 +254,73 @@ class Ryujin:
         return self.cmd(b"\xF1")
 
     def upload(self, data, ftype, slot):
+        if ftype not in FTYPE:
+            raise RyujinError("file type must be gif or jpg")
+        slot = validate_slot(slot)
         self.disk_info()
-        for attempt in range(2):
-            self.cmd(bytes([0x72, 0x01, FTYPE[ftype], slot]))   # SetFileIndex
-            self.cmd(b"\x73\x01")                               # begin write
-            if self.wait_event(b"\x13\x00\x01", fatal=False):
-                break
-            # seen once on 2026-09-03: the reply came but not the event, and the slot was
-            # left marked used. Closing the operation and starting again worked.
-            self.log("  no begin-write ack, closing the operation and retrying")
-            self.cmd(b"\x73\xFF")
-            time.sleep(1)
-        else:
-            raise RyujinError("device never acknowledged the file write")
-        # captured: 7F 02 <size u16 LE>; the upper bytes were 0 for every captured file, so a
-        # u32 LE here is wire-identical for < 64 KiB and the hypothesis for larger files
-        r = self.cmd(b"\x7F\x02" + struct.pack("<I", len(data)))
-        chunk = struct.unpack("<H", r[3:5])[0] or CHUNK
-        for off in range(0, len(data), chunk):
-            self.bulk_write(data[off:off + chunk].ljust(chunk, b"\0"))
-            self.wait_event(b"\x14")
-        self.cmd(b"\x73\xFF")                                   # end write
-        self.wait_event(b"\x13\x00\xFF")
+        begun = False
+        try:
+            for attempt in range(2):
+                self.cmd(bytes([0x72, 0x01, FTYPE[ftype], slot]))   # SetFileIndex
+                begun = True
+                self.cmd(b"\x73\x01")                             # begin write
+                if self.wait_event(b"\x13\x00\x01", fatal=False):
+                    break
+                # seen once on 2026-09-03: the reply came but not the event, and the slot was
+                # left marked used. Closing the operation and starting again worked.
+                self.log("  no begin-write ack, closing the operation and retrying")
+                self.cmd(b"\x73\xFF")
+                begun = False
+                time.sleep(1)
+            else:
+                raise RyujinError("device never acknowledged the file write")
+            # captured: 7F 02 <size u16 LE>; the upper bytes were 0 for every captured file, so a
+            # u32 LE here is wire-identical for < 64 KiB and the hypothesis for larger files
+            r = self.cmd(b"\x7F\x02" + struct.pack("<I", len(data)))
+            if len(r) < 5:
+                raise RyujinError(f"short chunk-size reply ({len(r)} bytes)")
+            chunk = struct.unpack("<H", r[3:5])[0] or CHUNK
+            for off in range(0, len(data), chunk):
+                self.bulk_write(data[off:off + chunk].ljust(chunk, b"\0"))
+                self.wait_event(b"\x14\x00\x00")
+            self.cmd(b"\x73\xFF")                               # end write
+            self.wait_event(b"\x13\x00\xFF")
+            begun = False
+        finally:
+            if begun:
+                try:
+                    self.cmd(b"\x73\xFF")
+                    self.wait_event(b"\x13\x00\xFF", fatal=False)
+                except (RyujinError, OSError):
+                    pass
 
     def delete(self, ftype, slot):
+        if ftype not in FTYPE:
+            raise RyujinError("file type must be gif or jpg")
+        slot = validate_slot(slot)
         self.cmd(bytes([0x72, 0x01, FTYPE[ftype], slot]))
         self.cmd(b"\x73\x03")
         self.wait_event((0x13, None, 0x03), timeout=3.0)   # seen as 13 10 03 (capture) and 13 00 03
 
     def slideshow_list(self, entries, duration):
         """entries = [(kind, slot), ...] -> setSlideshowList."""
+        if not isinstance(duration, int) or isinstance(duration, bool) or not 1 <= duration <= 255:
+            raise RyujinError("duration must be 1..255")
+        if not 1 <= len(entries) <= 15:
+            raise RyujinError("slideshow must contain 1 to 15 entries")
+        for kind, slot in entries:
+            if kind not in KIND:
+                raise RyujinError("media type must be gif, jpg or clock")
+            validate_slot(slot)
         body = bytearray([0x5D, 0x00, len(entries)])
         for kind, slot in entries:
             body += bytes([KIND[kind], MTYPE[kind], slot, duration])
         self.cmd(body)
 
     def play(self, kind, slot):
+        if kind not in KIND:
+            raise RyujinError("media type must be gif, jpg or clock")
+        slot = validate_slot(slot)
         self.cmd(bytes([0x51, KIND[kind], MTYPE[kind], slot]))
 
     def mode(self, m):
@@ -251,6 +368,9 @@ class Ryujin:
         """Wallpaper `slot` with up to 6 text lines (40 px apart), then start the slideshow.
         Verified 2026-09-03: a stored JPG is selected by this background command (0x10 + slot),
         not by the kind-04 list entry, which alone shows a built-in image."""
+        if kind != "jpg":
+            raise RyujinError("banner media type must be jpg")
+        slot = validate_slot(slot)
         self.cmd(bytes([0x60, 0x00, 0x01, 0x10, slot]))
         for i in range(6):
             text = (lines[i] if i < len(lines) else "").encode("utf-8")[:48]

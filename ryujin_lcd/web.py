@@ -33,7 +33,9 @@ page can be tried (and developed) on any machine.
   POST /api/monitor/stop
 """
 import argparse
+import copy
 import datetime
+import functools
 import glob
 import io
 import json
@@ -495,20 +497,51 @@ def describe_image(data):
 
 
 def merge(base, upd):
+    if not isinstance(upd, dict):
+        raise ApiError("configuration must be an object")
     out = dict(base)
     for k, v in upd.items():
         out[k] = merge(base[k], v) if isinstance(v, dict) and isinstance(base.get(k), dict) else v
     return out
 
 
+def validate_config(cfg):
+    """Reject persisted data that cannot safely be consumed by restore or the UI."""
+    if not isinstance(cfg, dict) or cfg.get("mode") not in ("hwmon", "slideshow"):
+        raise ApiError("invalid display mode in configuration")
+    hw = cfg.get("hwmon")
+    ss = cfg.get("slideshow")
+    if not isinstance(hw, dict) or not isinstance(ss, dict):
+        raise ApiError("invalid configuration section")
+    lines = hw.get("lines")
+    if not isinstance(lines, list) or not all(isinstance(line, dict) for line in lines):
+        raise ApiError("invalid hardware-monitor lines")
+    if any("sensor" in line and not isinstance(line["sensor"], str) for line in lines):
+        raise ApiError("invalid hardware-monitor sensor")
+    rgb(hw.get("bg", "000000"))
+    rgb(hw.get("fg", "FFFFFF"))
+    parse_interval(hw.get("interval", 2))
+    try:
+        int(ss.get("duration"))
+    except (TypeError, ValueError):
+        raise ApiError("invalid slideshow duration")
+    if ss.get("source") not in ("gif", "jpg", "clock"):
+        raise ApiError("invalid slideshow source")
+    if not isinstance(ss.get("gif_slots"), list) or not isinstance(ss.get("banner"), dict):
+        raise ApiError("invalid slideshow configuration")
+    return cfg
+
+
 def load_config():
     try:
-        return merge(DEFAULT_CONFIG, json.load(open(CONFIG)))
-    except (OSError, ValueError):
-        return json.loads(json.dumps(DEFAULT_CONFIG))
+        with open(CONFIG) as f:
+            return validate_config(merge(DEFAULT_CONFIG, json.load(f)))
+    except (OSError, ValueError, TypeError, ApiError):
+        return copy.deepcopy(DEFAULT_CONFIG)
 
 
 def save_config(cfg):
+    validate_config(cfg)
     os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
     tmp = CONFIG + ".tmp"
     json.dump(cfg, open(tmp, "w"), indent=2)
@@ -552,13 +585,23 @@ def settle(dev, kind, timeout=1.0):
 def rgb(h, n=3):
     try:
         b = bytes.fromhex(h.lstrip("#"))
-    except ValueError:
+    except (AttributeError, TypeError, ValueError):
         raise ApiError(f"bad color {h!r}")
     if len(b) == 3 and n == 4:
         b += b"\xFF"
     if len(b) != n:
         raise ApiError(f"color {h!r}: want {n} bytes")
     return tuple(b)
+
+
+def parse_interval(value):
+    try:
+        interval = float(value)
+    except (TypeError, ValueError):
+        raise ApiError("interval must be a positive number")
+    if not math.isfinite(interval) or interval <= 0:
+        raise ApiError("interval must be a positive number")
+    return interval
 
 
 def check_slot(ftype, slot):
@@ -573,16 +616,26 @@ def check_slot(ftype, slot):
     return slot
 
 
+def serialized_action(fn):
+    @functools.wraps(fn)
+    def wrapped(self, *args, **kwargs):
+        with self.action_lock:
+            return fn(self, *args, **kwargs)
+    return wrapped
+
+
 # --- application ---------------------------------------------------------------------
 class App:
-    def __init__(self, demo=False, verbose=False):
+    def __init__(self, demo=False, verbose=False, unsafe_raw=False):
         self.demo = demo
+        self.unsafe_raw = unsafe_raw
         self.device = Device(demo, verbose)
         self.sensors = Sensors(demo)
         self.monitor = None
         self.player = None
         self.config = load_config()
         self.cfg_lock = threading.Lock()
+        self.action_lock = threading.RLock()
         self.firmware = None          # read once
         self.storage, self.storage_at = None, 0.0   # the table changes only on upload/delete
 
@@ -658,6 +711,8 @@ class App:
         if self.monitor is not None:
             self.monitor.stop()
             self.monitor.join(timeout=5)
+            if self.monitor.is_alive():
+                raise ApiError("live monitor did not stop")
             self.monitor = None
 
     def player_state(self):
@@ -671,6 +726,8 @@ class App:
         if self.player is not None:
             self.player.stop()
             self.player.join(timeout=5)
+            if self.player.is_alive():
+                raise ApiError("slideshow player did not stop")
             self.player = None
 
     def set_config(self, **upd):
@@ -699,6 +756,7 @@ class App:
         return cfg["mode"]
 
     # actions --------------------------------------------------------------------
+    @serialized_action
     def display(self, body):
         fields = {}
         if "brightness" in body:
@@ -719,13 +777,14 @@ class App:
         st = self.device.run(lambda dev: dev.set_display_status(**fields))
         return {"display": parse_display_status(st)}
 
+    @serialized_action
     def hwmon(self, body):
         lines = body.get("lines") or []
         if not 1 <= len(lines) <= 3:
             raise ApiError("1 to 3 lines")
         bg, fg = rgb(body.get("bg", "000000")), rgb(body.get("fg", "FFFFFF"))
         live = bool(body.get("live", False))
-        interval = float(body.get("interval", 2))
+        interval = parse_interval(body.get("interval", 2))
         spec, page = [], []
         for l in lines:
             label = str(l.get("label", ""))[:18]
@@ -754,6 +813,7 @@ class App:
                                                "fg": body.get("fg", "FFFFFF"), "live": live, "interval": interval})
         return {"lines": page, "monitor": self.monitor_state()}
 
+    @serialized_action
     def show(self, body):
         source = body.get("source")
         duration = max(1, min(255, int(body.get("duration", 5))))
@@ -818,6 +878,8 @@ class App:
         if not data:
             raise ApiError("empty upload")
         if query.get("raw") in ("1", "true"):
+            if not self.unsafe_raw:
+                raise ApiError("raw media uploads are disabled", 403)
             out = data
         else:
             crop = None
@@ -832,6 +894,7 @@ class App:
             raise ApiError(f"not a {ftype} file")
         return ftype, slot, name, out
 
+    @serialized_action
     def thumbnail(self, query, data):
         """A local copy for a slot that is used on the device but was filled elsewhere
         (Armoury Crate, the CLI). Converted like an upload; nothing goes to the cooler."""
@@ -846,6 +909,7 @@ class App:
         save_media(ftype, slot, out, name)
         return {"type": ftype, "slot": slot, "bytes": len(out), "thumbnail": True}
 
+    @serialized_action
     def upload(self, query, data):
         ftype, slot, name, out = self._prepare_upload(query, data)
         t0 = time.monotonic()
@@ -857,6 +921,7 @@ class App:
         save_media(ftype, slot, out, name)
         return {"type": ftype, "slot": slot, "bytes": len(out), "seconds": round(time.monotonic() - t0, 1)}
 
+    @serialized_action
     def delete(self, ftype, slot):
         slot = check_slot(ftype, slot)
         used = self.device.run(lambda dev: (dev.delete(ftype, slot), self.read_storage(dev))[1][ftype]["used"])
@@ -867,7 +932,10 @@ class App:
         forget_media(ftype, slot)
         return {"type": ftype, "slot": slot}
 
+    @serialized_action
     def raw(self, body):
+        if not self.unsafe_raw:
+            raise ApiError("raw device commands are disabled", 403)
         try:
             payload = bytes.fromhex("".join(str(body.get("hex", "")).replace(",", " ").split()))
         except ValueError:
@@ -884,6 +952,8 @@ class App:
 class Handler(BaseHTTPRequestHandler):
     server_version = "ryujin-lcd-web/" + __version__
     app: App = None  # set by serve()
+    allowed_hosts = {"127.0.0.1", "localhost", "::1"}
+    auth_token = None
 
     def log_message(self, fmt, *args):
         if self.app.device.verbose:
@@ -908,8 +978,30 @@ class Handler(BaseHTTPRequestHandler):
         if host != self.headers.get("Host", ""):
             raise ApiError(f"cross-origin request from {origin} refused", 403)
 
+    def check_access(self, require_auth=True):
+        try:
+            host = urllib.parse.urlsplit("//" + self.headers.get("Host", "")).hostname
+        except ValueError:
+            raise ApiError("invalid Host header", 400)
+        if self.allowed_hosts is not None and host not in self.allowed_hosts:
+            raise ApiError(f"host {host or '(missing)'} is not allowed", 403)
+        if require_auth and self.auth_token:
+            supplied = self.headers.get("Authorization", "")
+            if supplied != f"Bearer {self.auth_token}":
+                raise ApiError("authentication required", 401)
+
     def read_body(self):
-        n = int(self.headers.get("Content-Length") or 0)
+        if self.headers.get("Transfer-Encoding"):
+            raise ApiError("Transfer-Encoding is not supported", 400)
+        lengths = self.headers.get_all("Content-Length", [])
+        if len(lengths) > 1:
+            raise ApiError("multiple Content-Length headers", 400)
+        try:
+            n = int(lengths[0]) if lengths else 0
+        except ValueError:
+            raise ApiError("invalid Content-Length", 400)
+        if n < 0:
+            raise ApiError("invalid Content-Length", 400)
         if n > MAX_UPLOAD:
             raise ApiError("upload too large (16 MB max)", 413)
         return self.rfile.read(n) if n else b""
@@ -945,6 +1037,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path, query = self.route()
         try:
+            self.check_access(require_auth=path.startswith("/api/"))
             if path == "/api/status":
                 return self.send_json(self.app.status(storage=query.get("storage") in ("1", "true")))
             if path == "/api/sensors":
@@ -968,6 +1061,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path, query = self.route()
         try:
+            self.check_access()
             self.check_origin()
             if path == "/api/upload":
                 return self.send_json(self.app.upload(query, self.read_body()))
@@ -987,9 +1081,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.app.stop_player()
                 return self.send_json({"monitor": self.app.monitor_state(),
                                        "slideshow": self.app.player_state()})
-            if path == "/api/config":
-                self.app.set_config(**body)
-                return self.send_json({"config": self.app.config})
             return self.send_json({"error": "not found"}, 404)
         except ApiError as e:
             return self.send_json({"error": str(e)}, e.status)
@@ -999,6 +1090,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         path, _ = self.route()
         try:
+            self.check_access()
             self.check_origin()
             parts = path.split("/")
             if path.startswith("/api/media/") and len(parts) == 5:
@@ -1008,8 +1100,16 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"error": str(e)}, e.status)
 
 
-def serve(host, port, demo=False, verbose=False, restore=True):
-    Handler.app = App(demo, verbose)
+def configure_access(host, token):
+    loopback = host in ("127.0.0.1", "localhost", "::1")
+    if not loopback and not token:
+        raise ApiError("a token is required when binding beyond loopback")
+    return ({"127.0.0.1", "localhost", "::1"} if loopback else None), token
+
+
+def serve(host, port, demo=False, verbose=False, restore=True, token=None, unsafe_raw=False):
+    Handler.allowed_hosts, Handler.auth_token = configure_access(host, token)
+    Handler.app = App(demo, verbose, unsafe_raw)
     httpd = ThreadingHTTPServer((host, port), Handler)
     httpd.daemon_threads = True
     print(f"ryujin-lcd-web: http://{host}:{port}/{'  (demo device)' if demo else ''}", flush=True)
@@ -1033,6 +1133,10 @@ def main():
     ap.add_argument("--port", type=int, default=8686)
     ap.add_argument("--demo", action="store_true", help="simulated device and sensors, no cooler needed")
     ap.add_argument("--no-restore", action="store_true", help="do not re-apply the saved mode at start")
+    ap.add_argument("--token", default=os.environ.get("RYUJIN_LCD_TOKEN"),
+                    help="Bearer token required for non-loopback API access (or RYUJIN_LCD_TOKEN)")
+    ap.add_argument("--unsafe-raw", action="store_true",
+                    help="enable raw device commands and raw media uploads")
     ap.add_argument("--import-crate", metavar="MOUNT",
                     help="take thumbnails for the stored media from Armoury Crate's copies on a mounted "
                          "system partition of the OS it ran on (e.g. /mnt), then exit")
@@ -1053,7 +1157,10 @@ def main():
         for ftype, slot, name, n, note in rows:
             print(f"{ftype} {slot:2d}  {name:45s} {n:7d} B  {note}")
         return
-    serve(a.host, a.port, a.demo, a.verbose, not a.no_restore)
+    try:
+        serve(a.host, a.port, a.demo, a.verbose, not a.no_restore, a.token, a.unsafe_raw)
+    except ApiError as e:
+        sys.exit(str(e))
 
 
 if __name__ == "__main__":

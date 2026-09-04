@@ -100,10 +100,19 @@ settings, and a tools page with the raw status bytes and a raw command console.
 
 ```
 ryujin-lcd-web                     # http://127.0.0.1:8686/
-ryujin-lcd-web --host 0.0.0.0      # reachable from the LAN (there is no login)
+RYUJIN_LCD_TOKEN='replace-with-a-long-random-token' ryujin-lcd-web --host 0.0.0.0
 ryujin-lcd-web --demo              # simulated cooler and sensors, no hardware needed
 ./install.sh --web                 # run it as a user service (replaces the monitor service)
 ```
+
+Loopback access needs no token. A non-loopback bind is refused unless `--token`
+or `RYUJIN_LCD_TOKEN` is set. Open the remote panel once with a URL whose fragment
+is `http://HOST:8686/#token=` followed by `encodeURIComponent(TOKEN)` (or paste a
+token containing no reserved URL characters directly); the panel decodes the entire
+suffix, moves the token into session storage, and removes it from the address bar.
+The built-in server is plain HTTP, so use a trusted LAN or put it behind an HTTPS
+reverse proxy. Raw commands and raw media uploads are disabled by default;
+`--unsafe-raw` enables them for protocol work.
 
 The server is the Python standard library only; Pillow is needed to crop and
 resize uploads. Applied settings are saved in `~/.config/ryujin-lcd/web.json`,

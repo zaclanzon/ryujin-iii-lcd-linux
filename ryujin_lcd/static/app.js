@@ -19,7 +19,7 @@ const state = {
 
 // ---- helpers ----------------------------------------------------------------------
 async function api(method, path, body, raw) {
-  const opt = { method, headers: {} };
+  const opt = { method, headers: window.ryujinAuthHeaders() };
   if (body !== undefined) {
     if (raw) opt.body = body;
     else { opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(body); }
@@ -472,6 +472,7 @@ function doUpload() {
   };
   xhr.onerror = () => { toast("upload failed: network error", "err"); closeModals(); };
   xhr.open("POST", (p.thumb ? "/api/thumbnail?" : "/api/upload?") + q.toString());
+  for (const [key, value] of Object.entries(window.ryujinAuthHeaders())) xhr.setRequestHeader(key, value);
   xhr.send(p.file);
 }
 function busy(text, pct) { $("#busy-modal").hidden = false; $("#busy-text").textContent = text; $("#busy-bar").style.width = pct + "%"; }
