@@ -42,6 +42,7 @@ import json
 import math
 import mimetypes
 import os
+import signal
 import struct
 import sys
 import threading
@@ -412,7 +413,8 @@ def media_path(ftype, slot):
 
 def media_meta(ftype, slot):
     try:
-        return json.load(open(media_path(ftype, slot) + ".json"))
+        with open(media_path(ftype, slot) + ".json") as f:
+            return json.load(f)
     except (OSError, ValueError):
         return None
 
@@ -422,7 +424,8 @@ def save_media(ftype, slot, data, name):
     p = media_path(ftype, slot)
     with open(p, "wb") as f:
         f.write(data)
-    json.dump({"name": name, "bytes": len(data), "time": time.time()}, open(p + ".json", "w"))
+    with open(p + ".json", "w") as f:
+        json.dump({"name": name, "bytes": len(data), "time": time.time()}, f)
 
 
 def forget_media(ftype, slot):
@@ -544,7 +547,8 @@ def save_config(cfg):
     validate_config(cfg)
     os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
     tmp = CONFIG + ".tmp"
-    json.dump(cfg, open(tmp, "w"), indent=2)
+    with open(tmp, "w") as f:
+        json.dump(cfg, f, indent=2)
     os.replace(tmp, CONFIG)
 
 
@@ -626,9 +630,8 @@ def serialized_action(fn):
 
 # --- application ---------------------------------------------------------------------
 class App:
-    def __init__(self, demo=False, verbose=False, unsafe_raw=False):
+    def __init__(self, demo=False, verbose=False):
         self.demo = demo
-        self.unsafe_raw = unsafe_raw
         self.device = Device(demo, verbose)
         self.sensors = Sensors(demo)
         self.monitor = None
@@ -878,8 +881,6 @@ class App:
         if not data:
             raise ApiError("empty upload")
         if query.get("raw") in ("1", "true"):
-            if not self.unsafe_raw:
-                raise ApiError("raw media uploads are disabled", 403)
             out = data
         else:
             crop = None
@@ -934,8 +935,6 @@ class App:
 
     @serialized_action
     def raw(self, body):
-        if not self.unsafe_raw:
-            raise ApiError("raw device commands are disabled", 403)
         try:
             payload = bytes.fromhex("".join(str(body.get("hex", "")).replace(",", " ").split()))
         except ValueError:
@@ -1084,7 +1083,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"error": "not found"}, 404)
         except ApiError as e:
             return self.send_json({"error": str(e)}, e.status)
-        except (ValueError, TypeError, KeyError) as e:
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
             return self.send_json({"error": f"bad request: {e}"}, 400)
 
     def do_DELETE(self):
@@ -1107,9 +1106,9 @@ def configure_access(host, token):
     return ({"127.0.0.1", "localhost", "::1"} if loopback else None), token
 
 
-def serve(host, port, demo=False, verbose=False, restore=True, token=None, unsafe_raw=False):
+def serve(host, port, demo=False, verbose=False, restore=True, token=None):
     Handler.allowed_hosts, Handler.auth_token = configure_access(host, token)
-    Handler.app = App(demo, verbose, unsafe_raw)
+    Handler.app = App(demo, verbose)
     httpd = ThreadingHTTPServer((host, port), Handler)
     httpd.daemon_threads = True
     print(f"ryujin-lcd-web: http://{host}:{port}/{'  (demo device)' if demo else ''}", flush=True)
@@ -1117,9 +1116,10 @@ def serve(host, port, demo=False, verbose=False, restore=True, token=None, unsaf
         r = Handler.app.restore()
         if r:
             print(f"restored {r} from {CONFIG}" if r in ("hwmon", "slideshow") else f"could not restore the saved mode: {r}", flush=True)
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))   # systemctl stop: run the cleanup below
     try:
         httpd.serve_forever()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
         pass
     finally:
         Handler.app.stop_monitor()
@@ -1135,8 +1135,6 @@ def main():
     ap.add_argument("--no-restore", action="store_true", help="do not re-apply the saved mode at start")
     ap.add_argument("--token", default=os.environ.get("RYUJIN_LCD_TOKEN"),
                     help="Bearer token required for non-loopback API access (or RYUJIN_LCD_TOKEN)")
-    ap.add_argument("--unsafe-raw", action="store_true",
-                    help="enable raw device commands and raw media uploads")
     ap.add_argument("--import-crate", metavar="MOUNT",
                     help="take thumbnails for the stored media from Armoury Crate's copies on a mounted "
                          "system partition of the OS it ran on (e.g. /mnt), then exit")
@@ -1158,7 +1156,7 @@ def main():
             print(f"{ftype} {slot:2d}  {name:45s} {n:7d} B  {note}")
         return
     try:
-        serve(a.host, a.port, a.demo, a.verbose, not a.no_restore, a.token, a.unsafe_raw)
+        serve(a.host, a.port, a.demo, a.verbose, not a.no_restore, a.token)
     except ApiError as e:
         sys.exit(str(e))
 

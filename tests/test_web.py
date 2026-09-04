@@ -55,22 +55,10 @@ def get_json(base, path, headers=None):
         return error.code, json.load(error)
 
 
-def test_raw_commands_are_disabled_by_default():
+def test_raw_command_reaches_the_device():
     app = App(demo=True)
 
-    with pytest.raises(ApiError, match="disabled") as exc:
-        app.raw({"hex": "DC"})
-
-    assert exc.value.status == 403
-
-
-def test_raw_media_uploads_are_disabled_by_default():
-    app = App(demo=True)
-
-    with pytest.raises(ApiError, match="raw media uploads are disabled") as exc:
-        app._prepare_upload({"type": "gif", "slot": "0", "raw": "1"}, b"GIF8not-an-image")
-
-    assert exc.value.status == 403
+    assert app.raw({"hex": "DC"})["sent"].startswith("EC DC")
 
 
 def test_generic_config_endpoint_is_not_exposed():

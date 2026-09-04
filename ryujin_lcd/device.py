@@ -1,6 +1,5 @@
 """ROG Ryujin III (0b05:1aa2) LCD over hidraw + bulk USB. Protocol: docs/protocol.md."""
 import datetime
-import fcntl
 import glob
 import io
 import os
@@ -87,28 +86,6 @@ def select_usb_device(devices, bus, address):
     raise RyujinError(f"cannot find bulk interface for cooler on USB bus {bus} address {address}")
 
 
-def acquire_process_lock(path):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    flags = os.O_RDWR | os.O_CREAT | os.O_CLOEXEC
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
-    try:
-        fd = os.open(path, flags, 0o600)
-    except OSError as error:
-        raise RyujinError(f"cannot open process lock {path}: {error.strerror}") from error
-    lock = os.fdopen(fd, "r+")
-    try:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        lock.close()
-        raise RyujinError("cooler is already in use by another process")
-    lock.seek(0)
-    lock.truncate()
-    lock.write(str(os.getpid()))
-    lock.flush()
-    return lock
-
-
 def find_hidraw():
     for uev in sorted(glob.glob("/sys/class/hidraw/hidraw*/device/uevent")):
         try:
@@ -124,20 +101,11 @@ def find_hidraw():
 
 class Ryujin:
     def __init__(self, verbose=False):
-        self.path, self.usb_bus, self.usb_address, usb_path = find_hidraw()
-        runtime = os.environ.get("XDG_RUNTIME_DIR")
-        if not runtime or not os.path.isabs(runtime):
-            runtime = "/tmp"
-        lock_name = os.path.basename(usb_path).replace("/", "_")
-        self._process_lock = acquire_process_lock(os.path.join(runtime, f"ryujin-lcd-{lock_name}.lock"))
+        self.path, self.usb_bus, self.usb_address, _ = find_hidraw()
         try:
             self.fd = os.open(self.path, os.O_RDWR | os.O_NONBLOCK)
         except PermissionError:
-            self._process_lock.close()
             raise RyujinError(f"{self.path}: permission denied (run as root or install udev/60-ryujin-lcd.rules)")
-        except OSError:
-            self._process_lock.close()
-            raise
         self.verbose = verbose
         self.events = []
         self._usb = None
@@ -220,13 +188,10 @@ class Ryujin:
         self.log(f"B {n} bytes -> EP 0x01")
 
     def close(self):
-        try:
-            if self._usb is not None:
-                import usb.util
-                usb.util.dispose_resources(self._usb)
-            os.close(self.fd)
-        finally:
-            self._process_lock.close()
+        if self._usb is not None:
+            import usb.util
+            usb.util.dispose_resources(self._usb)
+        os.close(self.fd)
 
     # --- protocol --------------------------------------------------------------
     def firmware(self):

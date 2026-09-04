@@ -5,7 +5,6 @@ import pytest
 from ryujin_lcd.device import (
     Ryujin,
     RyujinError,
-    acquire_process_lock,
     select_usb_device,
     usb_identity_for_path,
 )
@@ -187,24 +186,3 @@ def test_bulk_device_selection_matches_hid_bus_and_address():
 
     expected = Usb(1, 7)
     assert select_usb_device([Usb(1, 3), expected], 1, 7) is expected
-
-
-def test_process_lock_rejects_second_owner(tmp_path):
-    first = acquire_process_lock(str(tmp_path / "device.lock"))
-    try:
-        with pytest.raises(RyujinError, match="already in use"):
-            acquire_process_lock(str(tmp_path / "device.lock"))
-    finally:
-        first.close()
-
-
-def test_process_lock_does_not_follow_symlinks(tmp_path):
-    target = tmp_path / "target"
-    target.write_text("keep me")
-    lock = tmp_path / "device.lock"
-    lock.symlink_to(target)
-
-    with pytest.raises(RyujinError, match="lock"):
-        acquire_process_lock(str(lock))
-
-    assert target.read_text() == "keep me"

@@ -20,7 +20,6 @@ import argparse
 import sys
 import time
 
-from .device import *  # noqa: F401,F403
 from .device import Ryujin, RyujinError, CMD, MTYPE, MODE_HWMON, MODE_SLIDESHOW, hexs, trim, prepare, add_unit_glyphs, show_info
 
 

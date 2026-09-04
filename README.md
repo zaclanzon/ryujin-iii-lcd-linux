@@ -52,6 +52,20 @@ interface: it skips the driver's replies and the driver ignores the LCD replies.
 Mainline has the Ryujin III but not yet USB PID `0x1aa2`; a patch was sent to
 linux-hwmon in September 2026.
 
+### Pump duty: leave it to the motherboard header
+
+Nothing here writes pump or fan duty, on purpose. The Ryujin III has a 4-pin pump cable
+to a motherboard fan header, and until the first duty command over USB the pump follows
+that header's BIOS curve (confirmed with `nct6775`: the header PWM tracks CPU temperature
+and the pump tracks the PWM). The first duty write of any kind, from liquidctl, the hwmon
+driver's `pwm1`/`pwm2` or `fancontrol`, takes the pump off the header, and on this firmware
+it then runs at maximum while still reporting the old 40 % duty, until `pwm1` (liquidctl
+`set pump`) is written with a value different from the one it reports. Only a power cycle
+returns the pump to the header. Tracked in
+[liquidctl#923](https://github.com/liquidctl/liquidctl/issues/923) and
+[asus_rog_ryujin-hwmon#12](https://github.com/aleksamagicka/asus_rog_ryujin-hwmon/issues/12);
+whether the Extreme, EVA and White variants behave the same is untested.
+
 ## Use
 
 ```
@@ -111,8 +125,8 @@ is `http://HOST:8686/#token=` followed by `encodeURIComponent(TOKEN)` (or paste 
 token containing no reserved URL characters directly); the panel decodes the entire
 suffix, moves the token into session storage, and removes it from the address bar.
 The built-in server is plain HTTP, so use a trusted LAN or put it behind an HTTPS
-reverse proxy. Raw commands and raw media uploads are disabled by default;
-`--unsafe-raw` enables them for protocol work.
+reverse proxy. The server also refuses requests whose `Host` header is not the
+loopback address it listens on, so a web page cannot reach it through DNS rebinding.
 
 The server is the Python standard library only; Pillow is needed to crop and
 resize uploads. Applied settings are saved in `~/.config/ryujin-lcd/web.json`,

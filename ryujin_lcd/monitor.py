@@ -88,11 +88,12 @@ def read_value(hw, attr, fmt):
 def load_lines(args):
     if args:
         return args
-    if os.path.exists(CONFIG):
-        lines = [l.strip() for l in open(CONFIG) if l.strip() and not l.startswith("#")]
-        if lines:
-            return lines
-    return DEFAULT_LINES
+    try:
+        with open(CONFIG) as f:
+            lines = [l.strip() for l in f if l.strip() and not l.startswith("#")]
+    except OSError:
+        lines = []
+    return lines or DEFAULT_LINES
 
 
 def main():
