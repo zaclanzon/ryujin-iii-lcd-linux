@@ -14,6 +14,37 @@ from ryujin_lcd import web
 from ryujin_lcd.web import ApiError, App, Handler, configure_access
 
 
+def test_sensor_poll_reuses_discovery_and_refreshes_values(tmp_path, monkeypatch):
+    from ryujin_lcd import monitor
+
+    hwmon = tmp_path / "hwmon0"
+    hwmon.mkdir()
+    (hwmon / "name").write_text("coretemp")
+    (hwmon / "temp1_input").write_text("42000")
+    (hwmon / "temp1_label").write_text("Package")
+    glob = web.glob.glob
+    monkeypatch.setattr(web.glob, "glob", lambda pattern: glob(
+        pattern.replace("/sys/class/hwmon", str(tmp_path))))
+
+    def no_rescan(name):
+        pytest.fail("sensor poll repeated hwmon discovery")
+
+    monkeypatch.setattr(monitor, "hwmon_path", no_rescan)
+    sensors = web.Sensors(False)
+    first = sensors.list()
+    assert len(first) == 1
+    assert first[0]["id"] == "coretemp/temp1"
+    assert first[0]["label"] == "Package"
+    assert first[0]["value"] == monitor.FORMATS["temp"][1].format(42) + monitor.FORMATS["temp"][2]
+    (hwmon / "temp1_input").write_text("43000")
+    assert sensors.list()[0]["value"] != first[0]["value"]
+    # Re-enumeration must not leave a cached path pointing at the old device.
+    hwmon.rename(tmp_path / "hwmon1")
+    assert sensors.list()[0]["id"] == "coretemp/temp1"
+    (tmp_path / "hwmon1" / "temp1_input").unlink()
+    assert sensors.list() == []
+
+
 @pytest.fixture(autouse=True)
 def isolated_state(tmp_path, monkeypatch):
     """Never read or write the developer's own ~/.config and ~/.local/share."""
