@@ -237,7 +237,7 @@ class Sensors:
     def __init__(self, demo):
         self.demo = demo
 
-    def real(self):
+    def real(self, with_values=False):
         out, seen = [], {}
         for d in sorted(glob.glob("/sys/class/hwmon/hwmon*")):
             try:
@@ -248,11 +248,11 @@ class Sensors:
         dupes = {n for n, ds in seen.items() if len(ds) > 1}
         for name, dirs in seen.items():
             for d in dirs:
-                out += self._device(d, hwmon_id(d) if name in dupes else name)
+                out += self._device(d, hwmon_id(d) if name in dupes else name, with_values)
         return out
 
     @staticmethod
-    def _device(d, name):
+    def _device(d, name, with_values=False):
         out = []
         for inp in sorted(glob.glob(os.path.join(d, "*_input"))):
             attr = os.path.basename(inp)[:-6]
@@ -265,10 +265,12 @@ class Sensors:
             except OSError:
                 pass
             out.append({"id": f"{name}/{attr}", "hwmon": name, "attr": attr, "label": label, "kind": kind})
+            if with_values:
+                out[-1]["value"] = read_value(name, attr, FORMATS[kind], path=d)
         return out
 
     def list(self):
-        items = self.real()
+        items = self.real(with_values=True)
         if self.demo:
             have = {i["id"] for i in items}
             for sid, label, _, _ in DEMO_SENSORS:
@@ -277,7 +279,8 @@ class Sensors:
                     items.append({"id": sid, "hwmon": hw, "attr": attr, "label": label,
                                   "kind": attr.rstrip("0123456789"), "demo": True})
         for it in items:
-            it["value"] = self.read(it["hwmon"], it["attr"])
+            if "value" not in it or (self.demo and it["value"] == "n/a"):
+                it["value"] = self.read(it["hwmon"], it["attr"])
         return items
 
     def read(self, hw, attr):

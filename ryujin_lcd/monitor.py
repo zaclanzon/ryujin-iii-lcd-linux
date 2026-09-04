@@ -73,12 +73,16 @@ def hwmon_path(name):
     return None
 
 
-def read_value(hw, attr, fmt):
-    path = hwmon_path(hw)
+def read_value(hw, attr, fmt, *, path=None):
+    # Discovery callers already know the directory. Reuse it for this sample
+    # instead of scanning every hwmon device again for each sensor.
+    if path is None:
+        path = hwmon_path(hw)
     if path is None:
         return "n/a"
     try:
-        raw = int(open(os.path.join(path, attr + "_input")).read())
+        with open(os.path.join(path, attr + "_input")) as f:
+            raw = int(f.read())
     except (OSError, ValueError):
         return "n/a"
     div, pat, unit = fmt
