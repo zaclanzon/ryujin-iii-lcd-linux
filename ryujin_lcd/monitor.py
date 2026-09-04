@@ -10,7 +10,7 @@ devices share a name (three NVMe drives are all "nvme"), HWMON can be NAME:DEVIC
 DEVICE the basename of /sys/class/hwmon/hwmonN/device, e.g. nvme:nvme1. Units and
 formatting follow the attribute type: temp (°C, 1 decimal), fan (RPM), in (V, 3 decimals),
 power (W), curr (A), freq (MHz). Without LINE arguments the file
-~/.config/ryujin-lcd/monitor.conf is read (one LABEL=HWMON/SENSOR per line, # comments),
+$XDG_CONFIG_HOME/ryujin-lcd/monitor.conf is read (one LABEL=HWMON/SENSOR per line, # comments),
 falling back to the three defaults above.
 
 The full page (layout + mode) is sent once, and again whenever the cooler reports
@@ -25,10 +25,10 @@ import os
 import sys
 import time
 
-from .device import MODE_HWMON, Ryujin, RyujinError, add_unit_glyphs
+from .device import MODE_HWMON, Ryujin, RyujinError, add_unit_glyphs, xdg_config_home
 
 DEFAULT_LINES = ["Coolant=rog_ryujin/temp1", "Pump=rog_ryujin/fan1", "CPU=k10temp/temp1"]
-CONFIG = os.path.expanduser("~/.config/ryujin-lcd/monitor.conf")
+CONFIG = os.path.join(xdg_config_home(), "ryujin-lcd", "monitor.conf")
 FORMATS = {   # attribute prefix -> (divisor, format, unit suffix understood by add_unit_glyphs)
     "temp": (1000, "{:.1f}", "°C"),
     "fan": (1, "{:.0f}", " RPM"),

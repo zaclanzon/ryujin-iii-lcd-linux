@@ -24,6 +24,21 @@ MODE_SLIDESHOW, MODE_HWMON = 0x1F, 0x21
 UNIT_GLYPHS = (("°C", "\u2103"), ("C", "\u2103"), ("RPM", "\u218C"), ("V", "\u218A"))
 
 
+def xdg_dir(env, default):
+    """A base directory per the XDG Base Directory Specification: $env if it is set to an
+    absolute path, else the ~-relative default. Callers append the app subdir themselves."""
+    base = os.environ.get(env, "")
+    return base if base.startswith("/") else os.path.expanduser(default)
+
+
+def xdg_config_home():
+    return xdg_dir("XDG_CONFIG_HOME", "~/.config")
+
+
+def xdg_data_home():
+    return xdg_dir("XDG_DATA_HOME", "~/.local/share")
+
+
 def hexs(b):
     return " ".join(f"{x:02X}" for x in b)
 

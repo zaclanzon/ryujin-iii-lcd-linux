@@ -31,18 +31,21 @@ Crate (below).
 ## Install
 
 ```
-sudo apt install python3-usb python3-pil      # pyusb for uploads, Pillow to resize images
 git clone https://github.com/zaclanzon/ryujin3-lcd && cd ryujin3-lcd
-./install.sh                                  # udev rule (sudo), ~/.local/bin/ryujin-lcd
+./install.sh                                  # venv + deps, udev rule (sudo), wrappers in ~/.local/bin
 ryujin-lcd info
 ryujin-lcd-web                                # http://127.0.0.1:8686/
 ```
 
-`install.sh` copies the package under `~/.local/lib` and writes wrappers, so the
-system Python is untouched. `pipx install .` works too. The udev rule gives the
-`plugdev` group and the logged-in user access to the cooler's hidraw node and to
-its raw USB node (the vendor bulk interface carries the file data). Without it
-run everything as root.
+`install.sh` builds a private virtualenv under `~/.local/lib/ryujin-lcd` with the Python
+dependencies (pyusb, and Pillow to resize images) and symlinks wrappers into `~/.local/bin`,
+so the system Python is untouched and no distro packages are needed. It runs on any distro
+with `python3` and its `venv` module; `pipx install .` works too. The one system library is
+libusb (Debian `libusb-1.0-0`, Fedora `libusbx`, Arch `libusb`), usually already present.
+
+The udev rule tags the cooler's hidraw node and its raw USB node (the vendor bulk interface
+carries the file data) with `uaccess`, so systemd-logind grants your active local session
+access on any distro. Without the rule, run everything as root.
 
 The tool coexists with the `asus_rog_ryujin` hwmon driver on the same HID
 interface: it skips the driver's replies and the driver ignores the LCD replies.

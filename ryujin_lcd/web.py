@@ -10,8 +10,8 @@ standby, media upload with crop, delete, storage, raw commands.
 
 All device access goes through one lock, so the page, the live hardware-monitor feed
 and an upload never interleave on the shared HID interface. Uploaded media are kept
-in ~/.local/share/ryujin-lcd/media so the page can show thumbnails (the device
-cannot read files back). The applied settings are saved in ~/.config/ryujin-lcd/web.json.
+in $XDG_DATA_HOME/ryujin-lcd/media so the page can show thumbnails (the device
+cannot read files back). The applied settings are saved in $XDG_CONFIG_HOME/ryujin-lcd/web.json.
 
 At start the saved mode is re-applied where the device needs the host for it: the
 live sensor feed is started again, the clock is set again (--no-restore skips this).
@@ -48,13 +48,14 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .device import (CMD, FTYPE, HEIGHT, KIND, MODE_HWMON, MODE_SLIDESHOW, MTYPE, REPLY_ID, WIDTH,
-                     Ryujin, RyujinError, add_unit_glyphs, encode, hexs, trim)
+                     Ryujin, RyujinError, add_unit_glyphs, encode, hexs, trim,
+                     xdg_config_home, xdg_data_home)
 from .monitor import FORMATS, hwmon_id, read_value
 from . import __version__
 
 STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
-DATA_DIR = os.path.expanduser("~/.local/share/ryujin-lcd")
-CONFIG = os.path.expanduser("~/.config/ryujin-lcd/web.json")
+DATA_DIR = os.path.join(xdg_data_home(), "ryujin-lcd")
+CONFIG = os.path.join(xdg_config_home(), "ryujin-lcd", "web.json")
 SLOTS = 16
 MAX_UPLOAD = 16 << 20
 EXT = {"gif": "gif", "jpg": "jpg"}
