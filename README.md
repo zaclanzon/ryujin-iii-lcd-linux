@@ -3,8 +3,8 @@
 Drive the 3.5" LCD of the **ASUS ROG Ryujin III** AIO cooler (USB `0b05:1aa2`,
 firmware `AURJ2-S750-0108`) from Linux, without Armoury Crate.
 
-The protocol was captured from Armoury Crate on Windows and then replayed and
-checked on the panel from Linux. Nothing public implemented it before: liquidctl's
+The protocol was captured from Armoury Crate and then replayed and checked on the
+panel from Linux. Nothing public implemented it before: liquidctl's
 `set_screen` for this cooler raises "not yet reverse engineered" and the kernel's
 `asus_rog_ryujin` hwmon driver leaves the screen to userspace. The full write-up
 is [docs/protocol.md](docs/protocol.md); the raw material (parsed HID timeline,
@@ -118,50 +118,33 @@ in the same browser cannot drive the cooler through it.
 A file that is on screen cannot be deleted: the cooler acknowledges the command
 and keeps the file. The panel reports this; show something else first.
 
-### Coming from Windows: thumbnails for what Armoury Crate uploaded
+### Migrating from another OS
 
-The cooler never sends a file back (probed, see [docs/protocol.md](docs/protocol.md)),
-so a slot filled from Windows shows as *no local copy* here. Armoury Crate has the
-same limitation and solves it the same way: it keeps every upload, already
-converted to 320x240, under
+The cooler never sends a file back (see [docs/protocol.md](docs/protocol.md)), so a slot
+filled by the ASUS software shows as *no local copy* here. Armoury Crate keeps its own
+copy of every upload, already converted to 320x240, plus a profile mapping each file to a
+slot (`uploadImages[]` = id, `mediaIndex` = slot, `category` 0 gif / 1 jpg):
 
 ```
 C:\Program Files (x86)\ASUS\ArmouryDevice\View\externalFiles\aio\RYUJIN_III\<id>.gif|jpg
+C:\ProgramData\ASUS\Framework\aioFan\RYUJIN3\fp_1_config.xml
 ```
 
-and records which id sits in which slot in its profile
-`C:\ProgramData\ASUS\Framework\aioFan\RYUJIN3\fp_1_config.xml` (base64 of
-URL-encoded JSON, `display.media.uploadImages[]` with `mediaIndex` = slot, `category`
-0 = GIF, 1 = JPG). Those copies are byte-identical to what is on the device
-(checked against the captured bulk transfer). To take them over, mount the Windows
-system partition read-only and run the importer:
+Those copies are byte-identical to what is on the device. Mount that system partition
+read-only, stop the web service, and import them:
 
 ```
-sudo mount -o ro,noexec /dev/nvme0n1p3 /mnt     # your Windows partition; see lsblk -f
-systemctl --user stop ryujin-lcd-web            # the importer asks the cooler for its slot table
-ryujin-lcd-web --import-windows /mnt
-systemctl --user start ryujin-lcd-web
-sudo umount /mnt
+ryujin-lcd-web --import-crate /mnt     # prints each slot with size and frame count
 ```
 
-It prints one line per slot Armoury Crate knows, with size and frame count, and
-copies the file into `~/.local/share/ryujin-lcd/media` for slots the cooler lists
-as used; the panel shows them after its next storage refresh (the refresh button,
-or within a minute). Stop the web service or monitor service first: two programs
-on the HID interface at the same time can pick up each other's replies.
+It copies files into `~/.local/share/ryujin-lcd/media` for slots the cooler lists as used;
+the panel shows them on its next storage refresh.
 
-Check the result against the LCD before trusting it. Armoury Crate never verifies
-its folder against the cooler, and the folder can go stale: after a device-page
-update it may lose the files and the profile keeps pointing at names that now
-hold something else (here: five 1 KB single-frame stand-ins where the cooler
-still had the real animations). Tiny single-frame GIFs in the listing are the
-sign. For any slot the importer got wrong, or that it does not know (slots filled
-by the `ryujin-lcd` CLI; Armoury Crate only uses 0-9, so a used slot above 9
-always came from Linux), use the Media page: *Show now* puts the slot on the LCD,
-*Set thumbnail* lets you pick the matching file, which is converted like an upload
-and kept as the local copy only; nothing is sent to the cooler. The original,
-unconverted files you picked in Armoury Crate are not kept by it; look in your
-own folders (Downloads, Pictures) for them.
+Check the result against the LCD. Armoury Crate never verifies its folder against the cooler,
+so after a device-page update it can hold stale stand-ins (tiny single-frame GIFs) instead of
+the real animations. For any slot the importer got wrong or does not know (files uploaded with
+the `ryujin-lcd` CLI), use the Media page: *Show now* puts the slot on the LCD, *Set thumbnail*
+attaches the matching file as a local copy only, without touching the cooler.
 
 ## Protocol in one paragraph
 
@@ -184,6 +167,8 @@ portrait orientation, standby behavior, monitor-page colors. A liquidctl
 `set_screen` implementation can be built directly from `ryujin_lcd/device.py`.
 Issues and captures from other units welcome.
 
+Written with Claude Fable 5.1.
+
 ## License
 
-MIT.
+[MIT](LICENSE).

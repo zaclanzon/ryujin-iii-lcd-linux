@@ -1,7 +1,7 @@
 """Web control panel for the Ryujin III LCD, in the style of Armoury Crate.
 
   ryujin-lcd-web [--host 127.0.0.1] [--port 8686] [--demo] [--no-restore] [-v]
-  ryujin-lcd-web --import-windows /mnt      thumbnails from Armoury Crate's copies, see import_windows()
+  ryujin-lcd-web --import-crate /mnt        thumbnails from Armoury Crate's copies, see import_crate()
 
 Serves a single-page app (ryujin_lcd/static) and a JSON API from the Python standard
 library, no framework. Everything the CLI does is available: display mode (hardware
@@ -390,10 +390,10 @@ def forget_media(ftype, slot):
             pass
 
 
-def import_windows(root, storage=None):
+def import_crate(root, storage=None):
     """Take over Armoury Crate's local copies of the media it uploaded, from a mounted
-    Windows partition (read-only is fine). Armoury Crate cannot read files back either:
-    it keeps every upload, already converted to 320x240, under
+    system partition of the OS it ran on (read-only is fine). Armoury Crate cannot read
+    files back either: it keeps every upload, already converted to 320x240, under
       <root>/Program Files (x86)/ASUS/ArmouryDevice/View/externalFiles/aio/RYUJIN_III/<id>.gif|jpg
     and its profile maps each id to a device slot:
       <root>/ProgramData/ASUS/Framework/aioFan/RYUJIN3/fp_1_config.xml
@@ -428,7 +428,7 @@ def import_windows(root, storage=None):
         slot, name = int(it["mediaIndex"]), f"{it['id']}.{it.get('ext', ftype)}"
         src = next((os.path.join(d, name) for d in dirs if os.path.isfile(os.path.join(d, name))), None)
         if src is None:
-            out.append((ftype, slot, name, 0, "file missing on the Windows side")); continue
+            out.append((ftype, slot, name, 0, "file missing in the Armoury Crate folder")); continue
         data = open(src, "rb").read()
         note = ""
         if not data.startswith(MAGIC[ftype]):
@@ -956,12 +956,12 @@ def main():
     ap.add_argument("--port", type=int, default=8686)
     ap.add_argument("--demo", action="store_true", help="simulated device and sensors, no cooler needed")
     ap.add_argument("--no-restore", action="store_true", help="do not re-apply the saved mode at start")
-    ap.add_argument("--import-windows", metavar="MOUNT",
+    ap.add_argument("--import-crate", metavar="MOUNT",
                     help="take thumbnails for the stored media from Armoury Crate's copies on a mounted "
-                         "Windows partition (e.g. /mnt), then exit")
+                         "system partition of the OS it ran on (e.g. /mnt), then exit")
     ap.add_argument("-v", "--verbose", action="store_true", help="log requests and every HID report")
     a = ap.parse_args()
-    if a.import_windows:
+    if a.import_crate:
         storage = None
         try:
             dev = Ryujin(a.verbose)
@@ -970,7 +970,7 @@ def main():
         except RyujinError as e:
             print(f"cooler not reachable ({e}); importing without checking the slots", file=sys.stderr)
         try:
-            rows = import_windows(a.import_windows, storage)
+            rows = import_crate(a.import_crate, storage)
         except ApiError as e:
             sys.exit(str(e))
         for ftype, slot, name, n, note in rows:
