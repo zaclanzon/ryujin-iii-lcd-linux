@@ -210,6 +210,12 @@
         <label class="sublabel" style="margin-top:18px">Custom animation</label>
         <div class="tiles-grid small" id="standby-picker"></div>
       </div>
+      <div class="card">
+        <div class="card-head"><h2>Power-on default</h2><span class="hint">what the cooler shows on its own, at power-on and before this panel's service starts</span></div>
+        <div class="tiles-grid small" id="boot-picker"></div>
+        <p class="note">The cooler resumes whatever was last selected when it powers up, so a page driven from this computer (Hardware Monitor, Clock, a rotation) comes back empty until the service runs. With a default set, the service switches the LCD to it when it stops and restores your display mode when it starts. Saved as soon as you pick.</p>
+        <button class="btn small" id="boot-clear">No default (keep the last selection)</button>
+      </div>
       <div class="actions">
         <button class="btn" id="settings-reset">Revert</button>
         <button class="btn primary" id="settings-save"><span>Save</span></button>

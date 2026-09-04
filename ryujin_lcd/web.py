@@ -31,6 +31,7 @@ page can be tried (and developed) on any machine.
   DELETE /api/media/<type>/<slot>
   POST /api/raw                    {hex: "DC"} -> {reply}
   POST /api/monitor/stop
+  POST /api/boot                   {source: gif|jpg|null, slot}   power-on default, applied at stop
 """
 import argparse
 import copy
@@ -77,6 +78,9 @@ DEFAULT_CONFIG = {
         "source": "gif", "gif_slots": [], "jpg_slot": None, "duration": 5, "h24": False,
         "banner": {"lines": ["", "", "", "", "", ""], "color": "FFFFFFFF", "align": 0, "x": 8, "font": 3},
     },
+    # what the cooler shows on its own (at power-on, before this service runs): the service
+    # switches the LCD to it when it stops, and re-applies the mode above when it starts
+    "boot": {"source": None, "slot": None},
 }
 
 
@@ -532,6 +536,11 @@ def validate_config(cfg):
         raise ApiError("invalid slideshow source")
     if not isinstance(ss.get("gif_slots"), list) or not isinstance(ss.get("banner"), dict):
         raise ApiError("invalid slideshow configuration")
+    boot = cfg.get("boot")
+    if not isinstance(boot, dict) or boot.get("source") not in (None, "gif", "jpg"):
+        raise ApiError("invalid power-on default")
+    if boot.get("source"):
+        check_slot(boot["source"], boot.get("slot"))
     return cfg
 
 
@@ -742,21 +751,62 @@ class App:
         """Re-apply the saved configuration where the device cannot keep it by itself: the live
         sensor feed (the panel keeps the last values forever otherwise), the clock (set from the
         host), and a multi-animation slideshow (the rotation is host-driven). A single stored
-        animation or wallpaper keeps playing without help."""
+        animation or wallpaper keeps playing without help, unless leave() parked the LCD on the
+        power-on default at the last stop; then the saved mode is re-applied whatever it is."""
         cfg = self.config
-        ss = cfg["slideshow"]
+        ss, parked = cfg["slideshow"], bool(cfg["boot"].get("source"))
         try:
-            if cfg["mode"] == "hwmon" and cfg["hwmon"].get("live"):
-                self.hwmon(dict(cfg["hwmon"], live=True))
-            elif cfg["mode"] == "slideshow" and ss.get("source") == "clock":
+            if cfg["mode"] == "hwmon":
+                if not (parked or cfg["hwmon"].get("live")):
+                    return None
+                self.hwmon(cfg["hwmon"])
+            elif ss.get("source") == "clock":
                 self.show(dict(ss, source="clock"))
-            elif cfg["mode"] == "slideshow" and ss.get("source") == "gif" and len(ss.get("gif_slots") or []) > 1:
-                self.show({"source": "gif", "slots": ss["gif_slots"], "duration": ss.get("duration", 5)})
+            elif ss.get("source") == "gif":
+                slots = ss.get("gif_slots") or []
+                if not slots or not (parked or len(slots) > 1):
+                    return None
+                self.show({"source": "gif", "slots": slots, "duration": ss.get("duration", 5)})
+            elif parked and ss.get("jpg_slot") is not None:
+                self.show(dict(ss, source="jpg", slot=ss["jpg_slot"]))
             else:
                 return None
         except ApiError as e:
             return str(e)
         return cfg["mode"]
+
+    def leave(self):
+        """At stop, switch the LCD to the power-on default. The cooler resumes whatever was last
+        selected when it powers up, so a host-driven page (hardware monitor, clock, a rotation)
+        would come back empty until this service runs again. Display commands only."""
+        boot = self.config["boot"]
+        if not boot.get("source"):
+            return None
+        slot = boot["slot"]
+
+        def go(dev):
+            if boot["source"] == "gif":
+                dev.slideshow_list([("gif", slot)], 5)
+                dev.play("gif", slot)
+            else:
+                dev.banner("jpg", slot, [])
+        try:
+            self.stop_monitor()
+            self.stop_player()
+            self.device.run(go)
+        except ApiError as e:
+            return str(e)
+        return f"{boot['source']} {slot}"
+
+    @serialized_action
+    def set_boot(self, body):
+        source = body.get("source") or None
+        if source is None:
+            boot = {"source": None, "slot": None}
+        else:
+            boot = {"source": source, "slot": check_slot(source, body.get("slot"))}
+        self.set_config(boot=boot)
+        return {"boot": boot}
 
     # actions --------------------------------------------------------------------
     @serialized_action
@@ -1080,6 +1130,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.app.stop_player()
                 return self.send_json({"monitor": self.app.monitor_state(),
                                        "slideshow": self.app.player_state()})
+            if path == "/api/boot":
+                return self.send_json(self.app.set_boot(body))
             return self.send_json({"error": "not found"}, 404)
         except ApiError as e:
             return self.send_json({"error": str(e)}, e.status)
@@ -1122,6 +1174,9 @@ def serve(host, port, demo=False, verbose=False, restore=True, token=None):
     except (KeyboardInterrupt, SystemExit):
         pass
     finally:
+        r = Handler.app.leave()
+        if r:
+            print(f"left the LCD on the power-on default: {r}", flush=True)
         Handler.app.stop_monitor()
         Handler.app.stop_player()
         Handler.app.device.drop()

@@ -277,7 +277,19 @@ function renderPickers() {
   const anim = state.settings ? state.settings.anim_slot : null;
   $("#standby-picker").innerHTML = slotItems("gif").filter((it) => it.used).map((it) => tileHTML("gif", it, { selected: anim === it.slot })).join("")
     || `<div class="empty-msg">No animations stored yet. Upload a GIF in the Media library.</div>`;
+  const boot = (state.config && state.config.boot) || {};
+  $("#boot-picker").innerHTML = ["gif", "jpg"].flatMap((t) => slotItems(t).filter((it) => it.used).map((it) => tileHTML(t, it, { selected: boot.source === t && boot.slot === it.slot }))).join("")
+    || `<div class="empty-msg">Nothing stored on the cooler yet.</div>`;
+  $("#boot-clear").disabled = !boot.source;
 }
+async function setBoot(source, slot) {
+  try {
+    await api("POST", "/api/boot", { source, slot });
+    toast(source ? `Power-on default: ${source.toUpperCase()} slot ${slot}.` : "Power-on default cleared.");
+    await loadStatus();
+  } catch (e) { toast(e.message, "err", 6000); }
+}
+$("#boot-clear").addEventListener("click", () => setBoot(null, null));
 function renderMedia() {
   $("#gif-library").innerHTML = slotItems("gif").map((it) => tileHTML("gif", it, { library: true, deletable: true })).join("");
   $("#jpg-library").innerHTML = slotItems("jpg").map((it) => tileHTML("jpg", it, { library: true, deletable: true })).join("");
@@ -520,6 +532,7 @@ const TILE_HANDLERS = {
   "#gif-library": { select: () => {} },
   "#jpg-library": { select: () => {} },
   "#standby-picker": { select: (t, s) => { state.settings.anim_slot = s; state.settingsDirty = true; renderPickers(); } },
+  "#boot-picker": { select: setBoot },
 };
 for (const [sel, opts] of Object.entries(TILE_HANDLERS)) for (const ev of ["click", "keydown"]) $(sel).addEventListener(ev, (e) => onTileClick(e, opts));
 

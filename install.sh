@@ -31,8 +31,10 @@ if [ "$udev" = 1 ]; then
   echo "==> udev rule (sudo): hidraw + bulk access for 0b05:1aa2 (uaccess grants your local session)"
   sudo install -Dm644 "$REPO/udev/60-ryujin-lcd.rules" /etc/udev/rules.d/60-ryujin-lcd.rules
   sudo udevadm control --reload-rules
-  sudo udevadm trigger --action=add --subsystem-match=usb --attr-match=idVendor=0b05 --attr-match=idProduct=1aa2
-  sudo udevadm trigger --action=add --subsystem-match=hidraw
+  # "change" re-applies the rule (and the uaccess ACL) to the existing nodes; a replayed "add"
+  # let other userspace probe the cooler again and once left its HID interface silent (2026-09-04)
+  sudo udevadm trigger --action=change --subsystem-match=usb --attr-match=idVendor=0b05 --attr-match=idProduct=1aa2
+  sudo udevadm trigger --action=change --subsystem-match=hidraw
 fi
 
 echo "==> virtualenv + package -> $VENV"

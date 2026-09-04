@@ -149,6 +149,13 @@ in the same browser cannot drive the cooler through it.
 A file that is on screen cannot be deleted: the cooler acknowledges the command
 and keeps the file. The panel reports this; show something else first.
 
+**Power-on default** (Settings page). The cooler resumes whatever was last selected
+when it powers up, so a page driven from the host (Hardware Monitor, Clock, a
+rotation) comes back empty at boot until the user service starts at login. Pick a
+stored animation or wallpaper as the default and the service switches the LCD to it
+when it stops (`systemctl --user stop`, logout, shutdown), then restores your display
+mode when it starts. Display commands only, nothing is written to the cooler's storage.
+
 ### Migrating from another OS
 
 The cooler never sends a file back (see [docs/protocol.md](docs/protocol.md)), so a slot

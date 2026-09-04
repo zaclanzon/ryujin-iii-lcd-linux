@@ -14,6 +14,13 @@ from ryujin_lcd import web
 from ryujin_lcd.web import ApiError, App, Handler, configure_access
 
 
+@pytest.fixture(autouse=True)
+def isolated_state(tmp_path, monkeypatch):
+    """Never read or write the developer's own ~/.config and ~/.local/share."""
+    monkeypatch.setattr(web, "CONFIG", str(tmp_path / "web.json"))
+    monkeypatch.setattr(web, "DATA_DIR", str(tmp_path / "data"))
+
+
 @contextmanager
 def running_server(app, *, allowed_hosts={"127.0.0.1", "localhost", "::1"}, auth_token=None):
     Handler.app = app
@@ -59,6 +66,43 @@ def test_raw_command_reaches_the_device():
     app = App(demo=True)
 
     assert app.raw({"hex": "DC"})["sent"].startswith("EC DC")
+
+
+def test_leave_parks_the_lcd_on_the_power_on_default():
+    app = App(demo=True)
+    app.show({"source": "gif", "slots": [4], "duration": 5})
+    app.set_boot({"source": "gif", "slot": 4})
+    app.hwmon({"lines": [{"label": "CPU", "value": "1"}]})
+
+    assert app.leave() == "gif 4"
+    assert app.device.dev.current_item() == (web.KIND["gif"], web.MTYPE["gif"], 4)
+    assert App(demo=True).config["boot"] == {"source": "gif", "slot": 4}
+
+
+def test_leave_is_a_no_op_without_a_default():
+    app = App(demo=True)
+    app.hwmon({"lines": [{"label": "CPU", "value": "1"}]})
+
+    assert app.leave() is None
+    assert app.device.dev.current_item()[0] == web.MODE_HWMON
+
+
+def test_restore_reapplies_a_single_animation_only_when_parked():
+    app = App(demo=True)
+    app.show({"source": "gif", "slots": [4], "duration": 5})
+    app.device.dev.mode(web.MODE_HWMON)          # what the LCD shows after a stop
+    assert App(demo=True).restore() is None      # no default: the cooler kept the animation itself
+
+    app.set_boot({"source": "gif", "slot": 4})
+    parked = App(demo=True)
+    assert parked.restore() == "slideshow"
+    assert parked.device.dev.current_item() == (web.KIND["gif"], web.MTYPE["gif"], 4)
+
+
+@pytest.mark.parametrize("body", [{"source": "clock", "slot": 1}, {"source": "gif", "slot": 16}])
+def test_set_boot_rejects_bad_targets(body):
+    with pytest.raises(ApiError):
+        App(demo=True).set_boot(body)
 
 
 def test_generic_config_endpoint_is_not_exposed():
