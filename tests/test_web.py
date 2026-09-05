@@ -118,6 +118,69 @@ def test_leave_is_a_no_op_without_a_default():
     assert app.device.dev.current_item()[0] == web.MODE_HWMON
 
 
+def test_startup_restore_retries_permission_denied(tmp_path, monkeypatch):
+    app = App(demo=True)
+    app.show({"source": "gif", "slots": [4]})
+    app.set_boot({"source": "gif", "slot": 4})
+    app = App(demo=True)
+    now = [0.0]
+    monkeypatch.setattr(web.time, "monotonic", lambda: now[0])
+    real_run = app.device.run
+    attempts = []
+
+    def unavailable(fn):
+        attempts.append(True)
+        raise ApiError("/dev/hidraw8: permission denied", 503)
+
+    monkeypatch.setattr(app.device, "run", unavailable)
+    with web.RestoreServer(("127.0.0.1", 0), Handler) as server:
+        server.arm_restore(app)
+        server.service_actions()
+        assert len(attempts) == 1
+        now[0] = 5.0
+        server.service_actions()
+        assert len(attempts) == 2
+        monkeypatch.setattr(app.device, "run", real_run)
+        now[0] = 10.0
+        server.service_actions()
+        assert server.restore_app is None
+        assert app.device.dev.current_item() == (web.KIND["gif"], web.MTYPE["gif"], 4)
+
+
+@pytest.mark.parametrize("status", [400, 503])
+def test_restore_retry_stops_on_invalid_config_or_user_action(monkeypatch, status):
+    app = App(demo=True)
+    attempts = []
+
+    def fail(**kwargs):
+        attempts.append(True)
+        raise ApiError("unavailable", status)
+
+    monkeypatch.setattr(app, "restore", fail)
+    with web.RestoreServer(("127.0.0.1", 0), Handler) as server:
+        server.arm_restore(app)
+        if status == 503:
+            app.show({"source": "gif", "slots": [4]})
+        server.restore_at = 0
+        server.service_actions()
+        assert server.restore_app is None
+        assert len(attempts) == 1
+
+
+def test_leave_checks_the_selected_gif_slot(monkeypatch):
+    app = App(demo=True)
+    app.set_boot({"source": "gif", "slot": 6})
+    calls = []
+
+    def unsettled(dev, kind, slot=None):
+        calls.append((kind, slot))
+        raise ApiError("cooler did not switch to the requested display", 503)
+
+    monkeypatch.setattr(web, "settle", unsettled)
+    assert app.leave() == "cooler did not switch to the requested display"
+    assert calls == [(web.KIND["gif"], 6)]
+
+
 def test_restore_reapplies_a_single_animation_only_when_parked():
     app = App(demo=True)
     app.show({"source": "gif", "slots": [4], "duration": 5})
