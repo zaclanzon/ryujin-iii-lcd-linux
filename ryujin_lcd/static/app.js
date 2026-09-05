@@ -59,6 +59,8 @@ function formFromConfig(cfg) {
       gif_slots: storedSlots("gif", Array.isArray(ss.gif_slots) ? ss.gif_slots : (ss.gif_slot != null ? [ss.gif_slot] : [])),
       jpg_slot: storedSlot("jpg", ss.jpg_slot),
       duration: +ss.duration || 5, h24: !!ss.h24,
+      behavior: ss.behavior || "rotate",
+      thermal: { cpu: "k10temp/temp1", coolant: "rog_ryujin/temp1", warm: 60, hot: 75, stats: 85, coolant_stats: 45, hold: 10, hysteresis: 3, ...ss.thermal },
       banner: { lines: Array.from({ length: 6 }, (_, i) => (bn.lines || [])[i] || ""), color: rgba.slice(0, 6),
                 alpha: parseInt(rgba.slice(6, 8), 16), align: bn.align ? 1 : 0, x: bn.x ?? 8, font: bn.font ?? 3 },
     },
@@ -97,7 +99,7 @@ async function loadStatus(storage = false) {
 async function loadSensors() {
   const seq = ++sensorSeq;
   try { const s = (await api("GET", "/api/sensors")).sensors || []; if (seq !== sensorSeq) return; state.sensors = s; } catch (e) { /* keep old */ }
-  renderSensors(); refreshSensorOptions(); drawPreview();
+  renderSensors(); refreshSensorOptions(); renderThermalSensors(); drawPreview();
 }
 
 // ---- hero / status -------------------------------------------------------------------
@@ -169,6 +171,9 @@ function hydrateDisplay() {
   $("#hw-live").checked = f.hwmon.live;
   $("#hw-interval").value = String(f.hwmon.interval);
   $$("#source input").forEach((r) => r.checked = r.value === f.slideshow.source);
+  $("#gif-behavior").value = f.slideshow.behavior;
+  for (const key of ["warm", "hot", "stats", "coolant_stats", "hold", "hysteresis"]) $("#thermal-" + key).value = f.slideshow.thermal[key];
+  renderThermalSensors();
   const bn = f.slideshow.banner;
   $("#bn-color").value = hex6(bn.color); $("#bn-color-txt").textContent = "#" + bn.color;
   $("#bn-alpha").value = bn.alpha; $("#bn-alpha-out").textContent = Math.round(bn.alpha / 255 * 100) + "%"; setPct($("#bn-alpha"));
@@ -181,8 +186,19 @@ function showModeCards() {
   const f = state.form;
   $(".mode-hwmon").hidden = f.mode !== "hwmon";
   $(".mode-slideshow").hidden = f.mode !== "slideshow";
-  $("#duration-field").hidden = f.mode !== "slideshow";
+  const thermal = f.slideshow.source === "gif" && f.slideshow.behavior === "temperature";
+  $("#duration-field").hidden = f.mode !== "slideshow" || thermal;
+  $("#thermal-settings").hidden = !thermal;
   $$(".source-pane").forEach((p) => p.hidden = p.dataset.source !== f.slideshow.source);
+}
+function renderThermalSensors() {
+  if (!state.form) return;
+  for (const key of ["cpu", "coolant"]) {
+    const selected = state.form.slideshow.thermal[key];
+    const sensors = state.sensors.filter((s) => s.kind === "temp");
+    if (!sensors.some((s) => s.id === selected)) sensors.push({ id: selected, label: selected });
+    $("#thermal-" + key).innerHTML = sensors.map((s) => `<option value="${esc(s.id)}" ${s.id === selected ? "selected" : ""}>${esc(s.label)} · ${esc(s.id)}</option>`).join("");
+  }
 }
 function sensorOptions(selected) {
   const groups = {};
@@ -302,7 +318,8 @@ function renderApplyBar() {
   const dirty = isDirty();
   st.classList.toggle("dirty", dirty);
   const m = state.status && state.status.monitor;
-  st.textContent = dirty ? "Changes not applied to the device yet." : (m && m.running ? `Applied · live feed running${m.error ? " · " + m.error : ""}` : "Applied.");
+  const p = state.status && state.status.slideshow;
+  st.textContent = p && p.error && !dirty ? `Display error · ${p.error}` : p && p.running && !dirty ? `Applied · ${p.behavior === "temperature" ? "Temperature response" : "Timed rotation"} running${p.stage === 3 ? " · live stats takeover" : ` · GIF ${p.current}`}` : dirty ? "Changes not applied to the device yet." : (m && m.running ? `Applied · live feed running${m.error ? " · " + m.error : ""}` : "Applied.");
   $("#apply-revert").disabled = !dirty;
 }
 
@@ -318,14 +335,16 @@ async function apply() {
       toast(r.monitor && r.monitor.running ? "Hardware monitor applied, live feed running." : "Hardware monitor applied.");
     } else {
       const ss = f.slideshow, body = { source: ss.source, duration: ss.duration, h24: ss.h24 };
-      if (ss.source === "gif") { if (!ss.gif_slots.length) throw new Error("select at least one animation"); body.slots = ss.gif_slots; }
+      if (ss.source === "gif") { if (!ss.gif_slots.length) throw new Error("select at least one animation"); body.slots = ss.gif_slots; body.behavior = ss.behavior; body.thermal = ss.thermal;
+        if (ss.behavior === "temperature" && ss.gif_slots.length !== 3) throw new Error("select three animations in cool, warm, hot order");
+      }
       if (ss.source === "jpg") {
         if (ss.jpg_slot == null) throw new Error("select a wallpaper");
         body.slot = ss.jpg_slot;
         body.banner = { lines: ss.banner.lines, color: ss.banner.color + ss.banner.alpha.toString(16).padStart(2, "0").toUpperCase(), align: ss.banner.align, x: ss.banner.x, font: ss.banner.font };
       }
       await api("POST", "/api/show", body);
-      toast(ss.source === "gif" && ss.gif_slots.length > 1
+      toast(ss.source === "gif" && ss.behavior === "temperature" ? "Temperature response applied." : ss.source === "gif" && ss.gif_slots.length > 1
         ? `Slideshow applied: ${ss.gif_slots.length} animations, ${ss.duration}s each.`
         : `${KIND_LABEL[ss.source]} applied.`);
     }
@@ -351,7 +370,7 @@ function drawPreview() {
   clearInterval(state.clockTimer); state.clockTimer = null;
   if (!f) { noSignal(ctx, "CONNECTING"); return; }
   let caption = "Preview";
-  if (f.mode === "hwmon") {
+  if (f.mode === "hwmon" || (!isDirty() && state.status?.current?.kind === "hwmon" && f.slideshow.behavior === "temperature")) {
     caption = "Preview · Hardware Monitor";
     const h = f.hwmon, n = h.count, bg = "#" + h.bg, fg = "#" + h.fg;
     ctx.fillStyle = bg; ctx.fillRect(0, 0, 320, 240);
@@ -382,7 +401,8 @@ function drawPreview() {
     draw(); state.clockTimer = setInterval(draw, 1000);
   } else {
     const type = f.slideshow.source, gifs = f.slideshow.gif_slots;
-    const slot = type === "gif" ? (gifs.length ? gifs[0] : null) : f.slideshow.jpg_slot;
+    const liveSlot = !isDirty() && state.status?.current?.kind === "gif" ? state.status.current.slot : null;
+    const slot = type === "gif" ? (liveSlot ?? (gifs.length ? gifs[0] : null)) : f.slideshow.jpg_slot;
     const extra = type === "gif" && gifs.length > 1 ? ` +${gifs.length - 1} more` : "";
     caption = `Preview · ${KIND_LABEL[type]}${slot != null ? " " + slot : ""}${extra}`;
     if (slot == null) { noSignal(ctx, `SELECT ${type === "gif" ? "AN ANIMATION" : "A WALLPAPER"}`); }
@@ -605,6 +625,10 @@ $("#hw-bg").addEventListener("input", (e) => { state.form.hwmon.bg = fromHex6(e.
 $("#hw-fg").addEventListener("input", (e) => { state.form.hwmon.fg = fromHex6(e.target.value); $("#hw-fg-txt").textContent = "#" + state.form.hwmon.fg; onFormChange(); });
 $("#hw-live").addEventListener("change", (e) => { state.form.hwmon.live = e.target.checked; onFormChange(); });
 $("#hw-interval").addEventListener("change", (e) => { state.form.hwmon.interval = +e.target.value; onFormChange(); });
+$("#gif-behavior").addEventListener("change", (e) => { state.form.slideshow.behavior = e.target.value; showModeCards(); onFormChange(); });
+for (const key of ["cpu", "coolant", "warm", "hot", "stats", "coolant_stats", "hold", "hysteresis"]) {
+  $("#thermal-" + key).addEventListener("change", (e) => { state.form.slideshow.thermal[key] = ["cpu", "coolant"].includes(key) ? e.target.value : +e.target.value; onFormChange(); });
+}
 $("#source").addEventListener("change", (e) => { state.form.slideshow.source = e.target.value; showModeCards(); onFormChange(); });
 $("#bn-color").addEventListener("input", (e) => { state.form.slideshow.banner.color = fromHex6(e.target.value); $("#bn-color-txt").textContent = "#" + state.form.slideshow.banner.color; onFormChange(); });
 $("#bn-alpha").addEventListener("input", (e) => { state.form.slideshow.banner.alpha = +e.target.value; $("#bn-alpha-out").textContent = Math.round(e.target.value / 255 * 100) + "%"; setPct(e.target); onFormChange(); });

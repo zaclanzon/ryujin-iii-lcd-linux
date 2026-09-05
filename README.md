@@ -156,6 +156,25 @@ stored animation or wallpaper as the default and the service switches the LCD to
 when it stops (`systemctl --user stop`, logout, shutdown), then restores your display
 mode when it starts. Display commands only, nothing is written to the cooler's storage.
 
+### Temperature-responsive animations
+
+In **Customized Slideshow → Animation**, choose **Temperature response** and select
+exactly three stored GIFs in cool, warm, hot order. Choose the CPU and coolant
+sensors, then Apply. CPU temperature selects the animation; sustained high CPU
+or coolant temperature temporarily switches to live readings using your saved
+Hardware Monitor lines. Sensor loss also shows that page and an error in the panel.
+
+Default display triggers are CPU 60°C / 75°C for the second / third animation,
+and CPU 85°C or coolant 45°C for stats. A condition must last 10 seconds; returning
+requires a 3°C margin and the same delay. These values are adjustable display
+preferences, not cooling limits or pump/fan controls.
+
+The service restores this behavior at startup and parks on your power-on default
+at shutdown. Only display commands are sent during operation; media files are not
+re-uploaded. **Timed rotation** remains available for ordinary slideshows. Applying
+a GIF now waits for its actual slot in device readback, and the applied preview
+follows the current slot instead of always displaying the first selected GIF.
+
 ### Migrating from another OS
 
 The cooler never sends a file back (see [docs/protocol.md](docs/protocol.md)), so a slot
