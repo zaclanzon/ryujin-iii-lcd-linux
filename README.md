@@ -137,7 +137,9 @@ the web service is declared to conflict with the monitor service so only one of
 them drives the page. At start the server re-applies what needs the host: it
 restarts the live feed, sets the clock again, and resumes a multi-animation
 slideshow (`--no-restore` skips this); a single stored animation or wallpaper
-keeps playing by itself. Pick several animations in Customized Slideshow to
+keeps playing by itself. If the cooler is not accessible yet at login, the server
+retries restoration every five seconds. A successful settings change in the web
+panel cancels the pending startup restore. Pick several animations in Customized Slideshow to
 rotate through them at the chosen duration: the cooler was never seen to cycle a
 list on its own, so the server drives it by playing each in turn (display
 commands only, no writes to the cooler's storage), which means the rotation runs
@@ -154,7 +156,10 @@ when it powers up, so a page driven from the host (Hardware Monitor, Clock, a
 rotation) comes back empty at boot until the user service starts at login. Pick a
 stored animation or wallpaper as the default and the service switches the LCD to it
 when it stops (`systemctl --user stop`, logout, shutdown), then restores your display
-mode when it starts. Display commands only, nothing is written to the cooler's storage.
+mode when it starts. The service checks that the display switched before reporting
+success. This relies on a clean stop with device access; it cannot guarantee the
+default after power loss or confirm what firmware retains across power cycles.
+Display commands only, nothing is written to the cooler's storage.
 
 ### Temperature-responsive animations
 

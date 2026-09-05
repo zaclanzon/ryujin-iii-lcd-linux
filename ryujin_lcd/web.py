@@ -897,7 +897,8 @@ class App:
             self.config = merge(self.config, upd)
             save_config(self.config)
 
-    def restore(self):
+    @serialized_action
+    def restore(self, *, raise_errors=False):
         """Re-apply the saved configuration where the device cannot keep it by itself: the live
         sensor feed (the panel keeps the last values forever otherwise), the clock (set from the
         host), and a multi-animation slideshow (the rotation is host-driven). A single stored
@@ -922,6 +923,8 @@ class App:
             else:
                 return None
         except ApiError as e:
+            if raise_errors:
+                raise
             return str(e)
         return cfg["mode"]
 
@@ -938,8 +941,10 @@ class App:
             if boot["source"] == "gif":
                 dev.slideshow_list([("gif", slot)], 5)
                 dev.play("gif", slot)
+                settle(dev, KIND["gif"], slot=slot)
             else:
                 dev.banner("jpg", slot, [])
+                settle(dev, MODE_SLIDESHOW)
         try:
             self.stop_monitor()
             self.stop_player()
@@ -1328,28 +1333,62 @@ def configure_access(host, token):
     return ({"127.0.0.1", "localhost", "::1"} if loopback else None), token
 
 
+class RestoreServer(ThreadingHTTPServer):
+    """Retry startup restoration while login/udev makes the cooler accessible."""
+
+    def arm_restore(self, app):
+        self.restore_app = app
+        self.restore_config = app.config
+        self.restore_at = 0.0
+        self.service_actions()
+
+    def service_actions(self):
+        app = getattr(self, "restore_app", None)
+        if app is None or time.monotonic() < self.restore_at:
+            return
+        with app.action_lock:
+            # A successful UI action supersedes the startup configuration.
+            if app.config is not self.restore_config:
+                self.restore_app = None
+                return
+            try:
+                mode = app.restore(raise_errors=True)
+            except ApiError as e:
+                if e.status == 503:
+                    self.restore_at = time.monotonic() + 5
+                    print(f"could not restore the saved mode: {e}; retrying in 5 s", flush=True)
+                    return
+                print(f"could not restore the saved mode: {e}", flush=True)
+            else:
+                if mode:
+                    print(f"restored {mode} from {CONFIG}", flush=True)
+            self.restore_app = None
+
+
 def serve(host, port, demo=False, verbose=False, restore=True, token=None):
     Handler.allowed_hosts, Handler.auth_token = configure_access(host, token)
     Handler.app = App(demo, verbose)
-    httpd = ThreadingHTTPServer((host, port), Handler)
+    httpd = RestoreServer((host, port), Handler)
     httpd.daemon_threads = True
     print(f"ryujin-lcd-web: http://{host}:{port}/{'  (demo device)' if demo else ''}", flush=True)
-    if restore:
-        r = Handler.app.restore()
-        if r:
-            print(f"restored {r} from {CONFIG}" if r in ("hwmon", "slideshow") else f"could not restore the saved mode: {r}", flush=True)
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))   # systemctl stop: run the cleanup below
     try:
+        if restore:
+            httpd.arm_restore(Handler.app)
         httpd.serve_forever()
     except (KeyboardInterrupt, SystemExit):
         pass
     finally:
         r = Handler.app.leave()
         if r:
-            print(f"left the LCD on the power-on default: {r}", flush=True)
+            if r == f"{Handler.app.config['boot']['source']} {Handler.app.config['boot']['slot']}":
+                print(f"left the LCD on the power-on default: {r}", flush=True)
+            else:
+                print(f"could not select the power-on default: {r}", flush=True)
         Handler.app.stop_monitor()
         Handler.app.stop_player()
         Handler.app.device.drop()
+        httpd.server_close()
 
 
 def main():
