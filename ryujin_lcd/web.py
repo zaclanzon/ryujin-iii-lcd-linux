@@ -77,6 +77,10 @@ DEFAULT_CONFIG = {
     },
     "slideshow": {
         "source": "gif", "gif_slots": [], "jpg_slot": None, "duration": 5, "h24": False,
+        "behavior": "rotate",
+        "thermal": {"cpu": "k10temp/temp1", "coolant": "rog_ryujin/temp1",
+                    "warm": 60, "hot": 75, "stats": 85, "coolant_stats": 45,
+                    "hold": 10, "hysteresis": 3},
         "banner": {"lines": ["", "", "", "", "", ""], "color": "FFFFFFFF", "align": 0, "x": 8, "font": 3},
     },
     # what the cooler shows on its own (at power-on, before this service runs): the service
@@ -399,7 +403,7 @@ class SlideshowPlayer(threading.Thread):
                     if first:
                         dev.slideshow_list([("gif", slot)], int(self.interval))
                     dev.play("gif", slot)
-                    settle(dev, KIND["gif"])
+                    settle(dev, KIND["gif"], slot=slot)
                 self.device.run(go)
                 self.current, self.error = slot, None
             except ApiError as e:
@@ -412,6 +416,96 @@ class SlideshowPlayer(threading.Thread):
 
     def stop(self):
         self.stop_event.set()
+
+
+class TemperaturePlayer(SlideshowPlayer):
+    """Choose stored GIFs from temperature; sustained heat temporarily shows live stats."""
+
+    def __init__(self, device, sensors, slots, config, hwmon):
+        super().__init__(device, slots, 2)
+        self.sensors, self.config, self.hwmon = sensors, config, copy.deepcopy(hwmon)
+        self.stage = 0
+        self.pending, self.pending_at = None, 0
+        self.current = slots[0]
+        self.sent = None
+        self.checked_at = 0
+
+    def target(self, cpu, coolant):
+        c = self.config
+        h = c["hysteresis"]
+        if cpu >= c["stats"] or coolant >= c["coolant_stats"]:
+            return 3
+        if self.stage == 3 and (cpu >= c["stats"] - h or coolant >= c["coolant_stats"] - h):
+            return 3
+        stage = 2 if cpu >= c["hot"] else 1 if cpu >= c["warm"] else 0
+        if self.stage in (1, 2) and stage < self.stage:
+            boundary = c["hot"] if self.stage == 2 else c["warm"]
+            if cpu >= boundary - h:
+                return self.stage
+        return stage
+
+    def advance(self, target, now):
+        if target == self.stage:
+            self.pending = None
+        elif target != self.pending:
+            self.pending, self.pending_at = target, now
+        elif now - self.pending_at >= self.config["hold"]:
+            self.stage, self.pending = target, None
+        return self.stage
+
+    def temperature(self, name):
+        value = self.sensors.read(*self.config[name].split("/"))
+        try:
+            result = float(value.removesuffix("°C"))
+            if math.isfinite(result):
+                return result
+        except (ValueError, TypeError):
+            pass
+        raise ApiError(f"{name} sensor unavailable; showing live stats")
+
+    def tick(self, now):
+        sensor_error = None
+        try:
+            target = self.target(self.temperature("cpu"), self.temperature("coolant"))
+            self.advance(target, now)
+        except ApiError as e:
+            sensor_error = str(e)
+            self.stage, self.pending = 3, None
+        slot = None if self.stage == 3 else self.slots[self.stage]
+        page = []
+        if slot is None:
+            for line in self.hwmon["lines"][:3]:
+                value = (self.sensors.read(*line["sensor"].split("/", 1))
+                         if line.get("sensor") else str(line.get("value", "")))
+                page.append((line.get("label", ""), add_unit_glyphs(value)))
+        def send(dev):
+            expected = MODE_HWMON if slot is None else KIND["gif"]
+            actual = dev.current_item() if now - self.checked_at >= 60 else None
+            changed = self.sent is None or slot != self.current or (actual is not None and
+                (actual[0] != expected or (slot is not None and actual[2] != slot)))
+            if changed:
+                if slot is None:
+                    dev.hwmon(page, 0, None, rgb(self.hwmon["bg"]), rgb(self.hwmon["fg"]))
+                    dev.mode(MODE_HWMON)
+                    settle(dev, MODE_HWMON)
+                else:
+                    dev.slideshow_list([("gif", slot)], 5)
+                    dev.play("gif", slot)
+                    settle(dev, KIND["gif"], slot=slot)
+            elif slot is None and page != self.sent:
+                dev.hwmon_update(page)
+            if actual is not None or changed:
+                self.checked_at = now
+        self.device.run(send)
+        self.current, self.sent, self.error = slot, page, sensor_error
+
+    def run(self):
+        while not self.stop_event.is_set():
+            try:
+                self.tick(time.monotonic())
+            except ApiError as e:
+                self.error, self.sent = str(e), None
+            self.stop_event.wait(self.interval)
 
 
 # --- media cache and config -------------------------------------------------------------
@@ -537,6 +631,11 @@ def validate_config(cfg):
         raise ApiError("invalid slideshow source")
     if not isinstance(ss.get("gif_slots"), list) or not isinstance(ss.get("banner"), dict):
         raise ApiError("invalid slideshow configuration")
+    if ss.get("behavior", "rotate") not in ("rotate", "temperature"):
+        raise ApiError("invalid animation behavior")
+    thermal_config(ss.get("thermal", {}))
+    if ss.get("behavior") == "temperature" and len(ss["gif_slots"]) != 3:
+        raise ApiError("temperature response needs three animations, in cool/warm/hot order")
     for slot in ss["gif_slots"]:
         check_slot("gif", slot)
     if ss.get("jpg_slot") is not None:
@@ -598,12 +697,36 @@ def prepare_bytes(data, ftype, crop=None):
         raise ApiError(f"cannot convert image: {e}")
 
 
-def settle(dev, kind, timeout=1.0):
-    """Wait until the current-item reply shows `kind`: the cooler answers with the previous
-    page for ~100 ms after a play/mode command (measured 2026-09-03)."""
+def settle(dev, kind, timeout=2.0, slot=None):
+    """Wait for the requested page AND slot; an ACK can precede the actual switch."""
     end = time.monotonic() + timeout
-    while dev.current_item()[0] != kind and time.monotonic() < end:
+    while True:
+        current = dev.current_item()
+        if current[0] == kind and (slot is None or current[2] == slot):
+            return
+        if time.monotonic() >= end:
+            raise ApiError("cooler did not switch to the requested display", 503)
         time.sleep(0.05)
+
+
+def thermal_config(body):
+    if not isinstance(body, dict):
+        raise ApiError("temperature settings must be an object")
+    cfg = merge(DEFAULT_CONFIG["slideshow"]["thermal"], body)
+    for key in ("cpu", "coolant"):
+        sensor = cfg[key]
+        if not isinstance(sensor, str) or sensor.count("/") != 1:
+            raise ApiError(f"{key} must identify a temperature sensor")
+        hw, attr = sensor.split("/")
+        if not hw or not attr.startswith("temp") or not attr[4:].isdigit():
+            raise ApiError(f"{key} must identify a temperature sensor")
+    for key in ("warm", "hot", "stats", "coolant_stats"):
+        cfg[key] = bounded_integer(cfg[key], 1, 120, key)
+    cfg["hold"] = bounded_integer(cfg["hold"], 1, 300, "hold")
+    cfg["hysteresis"] = bounded_integer(cfg["hysteresis"], 1, 10, "hysteresis")
+    if not cfg["warm"] < cfg["hot"] < cfg["stats"]:
+        raise ApiError("temperature thresholds must increase: warm < hot < stats")
+    return cfg
 
 
 def rgb(h, n=3):
@@ -756,7 +879,9 @@ class App:
         if p is None or not p.is_alive():
             return {"running": False}
         return {"running": True, "slots": p.slots, "current": p.current,
-                "interval": p.interval, "error": p.error}
+                "interval": p.interval, "error": p.error,
+                "behavior": "temperature" if isinstance(p, TemperaturePlayer) else "rotate",
+                "stage": getattr(p, "stage", None)}
 
     @serialized_action
     def stop_player(self):
@@ -791,7 +916,7 @@ class App:
                 slots = ss.get("gif_slots") or []
                 if not slots or not (parked or len(slots) > 1):
                     return None
-                self.show({"source": "gif", "slots": slots, "duration": ss.get("duration", 5)})
+                self.show(dict(ss, slots=slots))
             elif parked and ss.get("jpg_slot") is not None:
                 self.show(dict(ss, source="jpg", slot=ss["jpg_slot"]))
             else:
@@ -903,16 +1028,29 @@ class App:
             if not slots:
                 raise ApiError("select at least one animation")
             slots = [check_slot("gif", s) for s in slots][:SLOTS]
-            slide["gif_slots"] = slots
+            slots = list(dict.fromkeys(slots))
+            behavior = body.get("behavior", "rotate")
+            if behavior not in ("rotate", "temperature"):
+                raise ApiError("animation behavior must be rotate or temperature")
+            thermal = thermal_config(body.get("thermal", {}))
+            if behavior == "temperature" and len(slots) != 3:
+                raise ApiError("select three animations in cool, warm, hot order")
+            used = self.read_storage()["gif"]["used"]
+            if any(slot not in used for slot in slots):
+                raise ApiError("selected animation is not stored on the cooler")
+            slide.update(gif_slots=slots, behavior=behavior, thermal=thermal)
             self.stop_monitor()
             self.stop_player()
-            if len(slots) == 1:
-                def go(dev):
-                    dev.slideshow_list([("gif", slots[0])], duration)
-                    dev.play("gif", slots[0])
-                    settle(dev, KIND["gif"])
-                self.device.run(go)
-            else:
+            # Apply the first frame synchronously so an HTTP success means it reached the LCD.
+            def initial(dev):
+                dev.slideshow_list([("gif", slots[0])], duration)
+                dev.play("gif", slots[0])
+                settle(dev, KIND["gif"], slot=slots[0])
+            self.device.run(initial)
+            if behavior == "temperature":
+                self.player = TemperaturePlayer(self.device, self.sensors, slots, thermal, self.config["hwmon"])
+                self.player.start()
+            elif len(slots) > 1:
                 self.player = SlideshowPlayer(self.device, slots, duration)
                 self.player.start()
             self.set_config(mode="slideshow", slideshow=slide)
@@ -1000,6 +1138,8 @@ class App:
     @serialized_action
     def delete(self, ftype, slot):
         slot = check_slot(ftype, slot)
+        if ftype == "gif" and self.player is not None and slot in self.player.slots:
+            raise ApiError("animation is in the active slideshow; select another display before deleting it", 409)
         used = self.device.run(lambda dev: (dev.delete(ftype, slot), self.read_storage(dev))[1][ftype]["used"])
         if slot in used:
             # verified 2026-09-03: the cooler acknowledges the delete but keeps the file

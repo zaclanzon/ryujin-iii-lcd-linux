@@ -380,6 +380,7 @@ def test_concurrent_slideshow_changes_leave_only_one_worker(monkeypatch):
 
     app = App(demo=True)
     app.set_config = lambda **updates: None
+    app.read_storage = lambda: {"gif": {"used": [0, 1, 2, 3]}}
     original_stop = app.stop_player
 
     def slow_stop():
@@ -422,3 +423,124 @@ def test_import_crate_probe_closes_device_after_disk_error(monkeypatch, tmp_path
     web.main()
 
     assert probe.closed
+
+
+def test_settle_waits_for_slot_and_rejects_unconfirmed_switch():
+    class Delayed:
+        def __init__(self):
+            self.replies = iter([(web.KIND['gif'], 1, 1), (web.KIND['gif'], 1, 2)])
+        def current_item(self):
+            return next(self.replies)
+    web.settle(Delayed(), web.KIND['gif'], slot=2)
+    dev = web.DemoRyujin()
+    with pytest.raises(ApiError, match='did not switch'):
+        web.settle(dev, web.KIND['gif'], timeout=0, slot=15)
+
+
+def temperature_player():
+    app = App(demo=True)
+    values = {'k10temp/temp1': '50.0°C', 'rog_ryujin/temp1': '35.0°C', 'rog_ryujin/fan1': '1700 RPM'}
+    app.sensors.read = lambda hw, attr: values.get(f'{hw}/{attr}', 'n/a')
+    player = web.TemperaturePlayer(app.device, app.sensors, [1, 2, 6],
+                                   web.thermal_config({}), app.config['hwmon'])
+    return app, player, values
+
+
+def test_temperature_sustain_hysteresis_takeover_and_recovery():
+    app, p, values = temperature_player()
+    p.tick(0)
+    assert app.device.dev.current_item()[2] == 1
+    values['k10temp/temp1'] = '65.0°C'
+    p.tick(2)
+    p.tick(11)
+    assert p.stage == 0
+    p.tick(12)
+    assert p.stage == 1 and p.current == 2
+    values['k10temp/temp1'] = '59.0°C'
+    p.tick(30)
+    p.tick(50)
+    assert p.stage == 1  # return margin prevents oscillation
+    values['k10temp/temp1'] = '80.0°C'
+    p.tick(52)
+    p.tick(62)
+    assert p.stage == 2 and p.current == 6
+    values['rog_ryujin/temp1'] = '46.0°C'
+    p.tick(64)
+    p.tick(74)
+    assert p.stage == 3 and app.device.dev.current_item()[0] == web.MODE_HWMON
+    values['rog_ryujin/temp1'] = '43.0°C'
+    p.tick(90)
+    assert p.stage == 3
+    values['rog_ryujin/temp1'] = '40.0°C'
+    p.tick(92)
+    p.tick(102)
+    assert p.stage == 2 and p.current == 6
+
+
+def test_missing_sensor_shows_stats_and_recovers_with_dwell():
+    app, p, values = temperature_player()
+    values['k10temp/temp1'] = 'n/a'
+    p.tick(0)
+    assert p.stage == 3 and 'unavailable' in p.error
+    assert app.device.dev.current_item()[0] == web.MODE_HWMON
+    values['k10temp/temp1'] = '50.0°C'
+    p.tick(2)
+    p.tick(12)
+    assert p.stage == 0 and p.error is None
+
+
+def test_temperature_restore_and_switch_stop_worker():
+    app = App(demo=True)
+    app.read_storage = lambda: {'gif': {'used': [1, 2, 6]}}
+    app.show({'source': 'gif', 'slots': [1, 2, 6], 'behavior': 'temperature'})
+    worker = app.player
+    app.stop_player()
+    restored = App(demo=True)
+    restored.read_storage = app.read_storage
+    try:
+        assert restored.restore() == 'slideshow'
+        assert restored.player_state()['behavior'] == 'temperature'
+        restored.show({'source': 'gif', 'slot': 6})
+        assert restored.player is None
+        assert restored.config['slideshow']['behavior'] == 'rotate'
+    finally:
+        restored.stop_player()
+    assert not worker.is_alive()
+
+
+@pytest.mark.parametrize('body', [
+    {'slots': [4], 'behavior': 'temperature'},
+    {'slots': [4], 'behavior': 'unknown'},
+    {'slots': [1, 2, 6], 'behavior': 'temperature', 'thermal': {'warm': 90}},
+    {'slots': [4], 'thermal': {'cpu': 'k10temp/fan1'}},
+    {'slots': [15]},
+])
+def test_invalid_slideshow_does_not_stop_existing_display(body):
+    app = App(demo=True)
+    app.show({'source': 'gif', 'slot': 4})
+    with pytest.raises(ApiError):
+        app.show(dict(body, source='gif'))
+    assert app.device.dev.current_item()[2] == 4
+    assert app.config['slideshow']['gif_slots'] == [4]
+
+
+def test_timed_rotation_reaches_each_selected_slot():
+    device = web.Device(demo=True)
+    player = web.SlideshowPlayer(device, [1, 2, 6], 1)
+    visited = []
+    class ThreeSteps:
+        def is_set(self):
+            return len(visited) == 3
+        def wait(self, interval):
+            visited.append(device.dev.current_item()[2])
+    player.stop_event = ThreeSteps()
+    player.run()
+    assert visited == [1, 2, 6]
+    assert player.error is None
+
+
+def test_active_slideshow_media_cannot_be_deleted():
+    app, player, _ = temperature_player()
+    app.player = player
+    with pytest.raises(ApiError, match='active slideshow'):
+        app.delete('gif', 2)

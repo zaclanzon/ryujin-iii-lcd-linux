@@ -142,6 +142,25 @@
         <div class="source-pane" data-source="gif">
           <label class="sublabel">Animations <span class="hint">GIF · pick one, or several to rotate through them at the duration above · + uploads into the next free slot</span></label>
           <div class="tiles-grid" id="gif-picker"></div>
+          <div class="field"><label for="gif-behavior">Animation behavior</label>
+            <div class="select"><select id="gif-behavior"><option value="rotate">Timed rotation</option><option value="temperature">Temperature response</option></select></div>
+          </div>
+          <div id="thermal-settings" hidden>
+            <p class="note">Select exactly three animations in cool → warm → hot order. To reorder, deselect them and select them in order. Sustained high temperatures show live stats using your Hardware Monitor settings. Requires the web service; your power-on default remains stored on the cooler.</p>
+            <div class="row wrap">
+              <div class="field"><label>CPU sensor</label><div class="select"><select id="thermal-cpu"></select></div></div>
+              <div class="field"><label>Coolant sensor</label><div class="select"><select id="thermal-coolant"></select></div></div>
+            </div>
+            <div class="row wrap">
+              <div class="field"><label>Warm CPU °C</label><input class="text" type="number" id="thermal-warm" min="1" max="120"></div>
+              <div class="field"><label>Hot CPU °C</label><input class="text" type="number" id="thermal-hot" min="1" max="120"></div>
+              <div class="field"><label>Stats at CPU °C</label><input class="text" type="number" id="thermal-stats" min="1" max="120"></div>
+              <div class="field"><label>Stats at coolant °C</label><input class="text" type="number" id="thermal-coolant_stats" min="1" max="120"></div>
+              <div class="field"><label>Sustain for seconds</label><input class="text" type="number" id="thermal-hold" min="1" max="300"></div>
+              <div class="field"><label>Return margin °C</label><input class="text" type="number" id="thermal-hysteresis" min="1" max="10"></div>
+            </div>
+            <p class="note">These are display triggers, not cooling controls. Returning to an animation requires temperatures below the trigger by the return margin for the same sustained period.</p>
+          </div>
         </div>
 
         <div class="source-pane" data-source="jpg" hidden>
