@@ -26,6 +26,19 @@ linux_packages() {
 linux_as_root() {
     if [ "$(id -u)" = 0 ]; then "$@"; else sudo "$@"; fi
 }
+# Tumbleweed mirrors are briefly inconsistent while they sync, so a single
+# refresh can fail on a missing repodata file. Retry, then let install refresh.
+zypper_refresh() {
+    zr_attempt=1
+    while [ "$zr_attempt" -le 3 ]; do
+        linux_as_root zypper --non-interactive --gpg-auto-import-keys refresh --force && return 0
+        echo "zypper refresh failed (attempt $zr_attempt/3); retrying in 15s." >&2
+        zr_attempt=$((zr_attempt + 1))
+        sleep 15
+    done
+    echo 'zypper refresh kept failing; continuing so install can refresh itself.' >&2
+    return 0
+}
 linux_dependencies() {
     [ "$(uname -s)" = Linux ] || { echo 'Linux is required.' >&2; return 1; }
     [ -r /etc/os-release ] || { echo 'Cannot detect the Linux distribution.' >&2; return 1; }
@@ -50,7 +63,7 @@ linux_dependencies() {
             linux_as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $lp_packages ;;
         fedora) linux_as_root dnf --refresh install -y $lp_packages ;;
         arch) linux_as_root pacman -Syu --needed --noconfirm $lp_packages ;;
-        suse) linux_as_root zypper --non-interactive refresh
+        suse) zypper_refresh
             linux_as_root zypper --non-interactive install $lp_packages ;;
         alpine) linux_as_root apk add --no-cache $lp_packages ;;
         void) linux_as_root xbps-install -Syu $lp_packages ;;
