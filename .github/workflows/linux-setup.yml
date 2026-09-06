@@ -1,0 +1,66 @@
+name: Linux setup
+'on':
+  pull_request: null
+  workflow_dispatch: null
+  schedule:
+  - cron: 33 8 * * 1
+permissions:
+  contents: read
+concurrency:
+  group: linux-setup-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  install:
+    name: ${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - distro: Ubuntu 24.04
+          image: ubuntu:24.04
+        - distro: Debian stable
+          image: debian:stable
+        - distro: Fedora
+          image: fedora:latest
+        - distro: Arch
+          image: archlinux:latest
+        - distro: openSUSE
+          image: opensuse/tumbleweed:latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install and verify
+      run: 'bash install.sh --packages-only
+
+        python3 -m venv /tmp/ryujin-test
+
+        /tmp/ryujin-test/bin/pip install ''.[images,dev]''
+
+        /tmp/ryujin-test/bin/ryujin-lcd --help
+
+        /tmp/ryujin-test/bin/python -c ''import usb.backend.libusb1; from PIL import Image; assert usb.backend.libusb1.get_backend()
+        is not None''
+
+        /tmp/ryujin-test/bin/python -m pytest -q
+
+        '
+  maintenance:
+    name: Report compatibility breakage
+    needs:
+    - install
+    if: always() && github.event_name == 'schedule' && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+    - name: Open one dependency maintenance issue
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: "title=\"Linux setup compatibility needs review\"\nexisting=$(gh issue list --state open --search \"$title in:title\"\
+        \ --json number --jq 'length')\nif [ \"$existing\" = 0 ]; then\n  printf 'The weekly Linux setup check failed: %s\\\
+        n\\nReview the setup manifest and runtime requirements, fix the failing job, and rerun the workflow before closing\
+        \ this issue. Do not update host drivers or production data as part of the check.\\n' \"$RUN_URL\" > /tmp/linux-setup-issue.md\n\
+        \  gh issue create --title \"$title\" --body-file /tmp/linux-setup-issue.md\nfi\n"

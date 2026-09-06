@@ -13,6 +13,7 @@ dependencies = ["pyusb>=1.0"]
 
 [project.optional-dependencies]
 images = ["Pillow"]
+dev = ["pytest>=8"]
 
 [project.scripts]
 ryujin-lcd = "ryujin_lcd.cli:main"

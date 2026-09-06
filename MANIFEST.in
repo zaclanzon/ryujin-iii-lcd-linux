@@ -1,0 +1,4 @@
+include install.sh
+recursive-include scripts *.sh *.py
+recursive-include udev *.rules
+recursive-include systemd *.service
