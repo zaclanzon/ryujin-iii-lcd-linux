@@ -34,7 +34,9 @@ jobs:
       with:
         node-version: '22'
     - name: Install and verify
-      run: 'bash install.sh --packages-only
+      run: 'export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
+        bash install.sh --packages-only
 
         python3 -m venv /tmp/ryujin-test
 
@@ -48,8 +50,9 @@ jobs:
         /tmp/ryujin-test/bin/python -m pytest -q
 
         '
-    env:
-      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    defaults:
+      run:
+        shell: /bin/bash --noprofile --norc -eo pipefail {0}
   maintenance:
     name: Report compatibility breakage
     needs:
