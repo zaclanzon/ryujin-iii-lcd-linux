@@ -48,6 +48,8 @@ jobs:
         /tmp/ryujin-test/bin/python -m pytest -q
 
         '
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
   maintenance:
     name: Report compatibility breakage
     needs:
