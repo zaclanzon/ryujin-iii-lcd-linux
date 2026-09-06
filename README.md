@@ -37,15 +37,26 @@ ryujin-lcd info
 ryujin-lcd-web                                # http://127.0.0.1:8686/
 ```
 
-`install.sh` builds a private virtualenv under `~/.local/lib/ryujin-lcd` with the Python
-dependencies (pyusb, and Pillow to resize images) and symlinks wrappers into `~/.local/bin`,
-so the system Python is untouched and no distro packages are needed. It runs on any distro
-with `python3` and its `venv` module; `pipx install .` works too. The one system library is
-libusb (Debian `libusb-1.0-0`, Fedora `libusbx`, Arch `libusb`), usually already present.
+`install.sh` installs the distro's Python/venv, libusb, and udev packages,
+then installs pyusb and Pillow into `~/.local/lib/ryujin-lcd/venv` and adds
+commands in `~/.local/bin`. Reruns preserve the install directory and configuration.
 
-The udev rule tags the cooler's hidraw node and its raw USB node (the vendor bulk interface
-carries the file data) with `uaccess`, so systemd-logind grants your active local session
-access on any distro. Without the rule, run everything as root.
+| Family | Distros |
+| --- | --- |
+| Debian / Ubuntu | Includes Mint and Pop!_OS |
+| Fedora / RHEL | Compatible releases with required repositories |
+| Arch | Includes Manjaro and EndeavourOS; setup includes a full upgrade |
+| openSUSE | Tumbleweed and compatible Leap releases |
+
+Use `./install.sh --dry-run` for the plan, `--no-packages` for dependencies managed
+elsewhere, and `--no-udev` for a preconfigured USB rule. Immutable hosts need native
+host configuration. The USB rule grants access to the active local session through
+logind; other session managers need their own permission setup. No pump/fan duty
+is changed by installation. Preview with `ryujin-lcd-web --demo` without hardware.
+
+Weekly [compatibility checks](docs/linux-maintenance.md) install current packages,
+verify the libusb backend and image bindings, and run hardware-free tests. Library
+updates stay with the distro updater; Dependabot proposes Python/CI updates.
 
 The tool coexists with the `asus_rog_ryujin` hwmon driver on the same HID
 interface: it skips the driver's replies and the driver ignores the LCD replies.

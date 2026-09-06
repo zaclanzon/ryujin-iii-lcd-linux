@@ -6,26 +6,34 @@
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB="$HOME/.local/lib/ryujin-lcd"; BIN="$HOME/.local/bin"; VENV="$LIB/venv"
-udev=1; services=()
+udev=1; services=(); packages=1; packages_only=0; LINUX_SETUP_DRY_RUN=0
 for arg in "$@"; do
   case "$arg" in
     --no-udev) udev=0 ;;
+    --no-packages) packages=0 ;;
+    --packages-only) packages_only=1 ;;
+    --dry-run) LINUX_SETUP_DRY_RUN=1 ;;
+    -h|--help) echo 'Usage: ./install.sh [--monitor|--web] [--no-udev] [--no-packages] [--packages-only] [--dry-run]'; exit 0 ;;
     --monitor|--web) services+=("$arg") ;;
     *) echo "unknown option $arg (--monitor, --web, --no-udev)"; exit 2 ;;
   esac
 done
 
-command -v python3 >/dev/null || { echo "python3 not found"; exit 1; }
-python3 -c "import venv" 2>/dev/null || {
-  echo "python3 venv module missing. Install it, e.g.:"
-  echo "  Debian/Ubuntu: sudo apt install python3-venv     Fedora/Bazzite: it ships with python3     Arch: it ships with python"
-  exit 1
-}
-# pyusb needs the libusb-1.0 runtime (a system library, not a Python package)
-python3 - <<'PY' || echo "note: libusb-1.0 runtime not found; uploads need it (Debian: libusb-1.0-0, Fedora: libusbx, Arch: libusb)"
-import ctypes.util, sys
-sys.exit(0 if ctypes.util.find_library("usb-1.0") else 1)
-PY
+. "$REPO/scripts/linux-deps.sh"
+if [[ "$LINUX_SETUP_DRY_RUN" == 0 && "$EUID" == 0 && "$packages_only" == 0 ]]; then
+  echo 'Run as your desktop user; system steps use sudo.' >&2; exit 1
+fi
+[[ "$packages" == 0 ]] || linux_dependencies
+[[ "$LINUX_SETUP_DRY_RUN" == 0 ]] || { echo 'Dry run: dependencies, USB rule, venv and requested user services; no changes made.'; exit 0; }
+PYTHON=/usr/bin/python3
+[[ -x "$PYTHON" ]] || PYTHON=$(command -v python3)
+"$PYTHON" "$REPO/scripts/check-linux-deps.py"
+[[ "$packages_only" == 0 ]] || exit 0
+if (( ${#services[@]} )); then
+  systemctl --user show-environment >/dev/null || {
+    echo 'Requested service setup needs a running systemd user session.' >&2; exit 1;
+  }
+fi
 
 if [ "$udev" = 1 ]; then
   echo "==> udev rule (sudo): hidraw + bulk access for 0b05:1aa2 (uaccess grants your local session)"
@@ -38,8 +46,8 @@ if [ "$udev" = 1 ]; then
 fi
 
 echo "==> virtualenv + package -> $VENV"
-rm -rf "$LIB"; mkdir -p "$LIB" "$BIN"
-python3 -m venv "$VENV"
+mkdir -p "$LIB" "$BIN"
+"$PYTHON" -m venv "$VENV"
 "$VENV/bin/pip" install --quiet --upgrade pip
 "$VENV/bin/pip" install --quiet "$REPO[images]"   # pyusb + Pillow + the ryujin-lcd entry points
 
