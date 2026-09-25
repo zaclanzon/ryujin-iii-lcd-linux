@@ -259,6 +259,36 @@ def test_loopback_server_rejects_unexpected_host_header():
     assert "host" in body["error"].lower()
 
 
+def test_other_sites_cannot_read_or_trigger_the_api():
+    with running_server(App(demo=True)) as base:
+        # <img src=".../api/status?storage=1"> on another site: no Origin, labelled no-cors
+        image, body = get_json(base, "/api/status?storage=1",
+                               {"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "no-cors"})
+        fetched, _ = get_json(base, "/api/status", {"Origin": "https://attacker.example"})
+        # a local dashboard on another port previews the page in an iframe
+        framed = urllib.request.urlopen(urllib.request.Request(base + "/", headers={
+            "Sec-Fetch-Site": "same-site", "Sec-Fetch-Mode": "navigate"}))
+        own, _ = get_json(base, "/api/status", {"Origin": base, "Sec-Fetch-Site": "same-origin"})
+        plain, _ = get_json(base, "/api/status")  # curl sends no Origin or Sec-Fetch headers
+
+    assert image == 403 and "cross-site" in body["error"]
+    assert fetched == 403
+    assert framed.status == 200
+    assert own == 200 and plain == 200
+
+
+def test_responses_carry_security_headers():
+    with running_server(App(demo=True)) as base:
+        with urllib.request.urlopen(base + "/") as page:
+            headers = page.headers
+        with urllib.request.urlopen(base + "/api/status") as api:
+            api_headers = api.headers
+
+    for h in (headers, api_headers):
+        assert h["X-Content-Type-Options"] == "nosniff"
+        assert h["Content-Security-Policy"].startswith("frame-ancestors 'self' http://127.0.0.1:*")
+
+
 def test_malformed_host_header_is_rejected_cleanly():
     with running_server(App(demo=True)) as base:
         parsed = urllib.parse.urlsplit(base)
