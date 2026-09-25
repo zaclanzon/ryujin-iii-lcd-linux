@@ -1168,6 +1168,16 @@ class App:
 
 
 # --- HTTP ----------------------------------------------------------------------------
+# Loopback pages (this one, or a local dashboard that previews it) may frame
+# the UI; a page on another site may not.
+SECURITY_HEADERS = (
+    ("X-Content-Type-Options", "nosniff"),
+    ("Content-Security-Policy",
+     "frame-ancestors 'self' http://127.0.0.1:* http://localhost:* http://[::1]:*"),
+    ("Referrer-Policy", "no-referrer"),
+)
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "ryujin-lcd-web/" + __version__
     app: App = None  # set by serve()
@@ -1179,6 +1189,11 @@ class Handler(BaseHTTPRequestHandler):
             sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
 
     # helpers ----------------------------------------------------------------
+    def end_headers(self):
+        for name, value in SECURITY_HEADERS:
+            self.send_header(name, value)
+        super().end_headers()
+
     def send_json(self, obj, status=200):
         body = json.dumps(obj).encode()
         self.send_response(status)
@@ -1188,14 +1203,21 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def check_origin(self):
-        """Browsers send Origin on cross-site POST/DELETE; refuse those, the API has no login."""
+    def check_origin(self, path):
+        """Refuse what a page on another site can send; the API has no login.
+
+        Browsers send Origin on cross-origin fetches and on every POST and
+        DELETE. An image or script tag sends no Origin, but browsers label it
+        in Sec-Fetch-Site, and GET /api/status?storage=1 still talks to the
+        device. Another site may only navigate to the page. curl sends none
+        of these headers.
+        """
         origin = self.headers.get("Origin")
-        if not origin:
-            return
-        host = urllib.parse.urlsplit(origin).netloc
-        if host != self.headers.get("Host", ""):
+        if origin and urllib.parse.urlsplit(origin).netloc != self.headers.get("Host", ""):
             raise ApiError(f"cross-origin request from {origin} refused", 403)
+        if self.headers.get("Sec-Fetch-Site") in ("cross-site", "same-site") and (
+                path.startswith("/api/") or self.headers.get("Sec-Fetch-Mode") != "navigate"):
+            raise ApiError("cross-site request refused", 403)
 
     def check_access(self, require_auth=True):
         hosts = self.headers.get_all("Host", [])
@@ -1262,6 +1284,7 @@ class Handler(BaseHTTPRequestHandler):
         path, query = self.route()
         try:
             self.check_access(require_auth=path.startswith("/api/"))
+            self.check_origin(path)
             if path == "/api/status":
                 return self.send_json(self.app.status(storage=query.get("storage") in ("1", "true")))
             if path == "/api/sensors":
@@ -1286,7 +1309,7 @@ class Handler(BaseHTTPRequestHandler):
         path, query = self.route()
         try:
             self.check_access()
-            self.check_origin()
+            self.check_origin(path)
             if path == "/api/upload":
                 return self.send_json(self.app.upload(query, self.read_body()))
             if path == "/api/thumbnail":
@@ -1317,7 +1340,7 @@ class Handler(BaseHTTPRequestHandler):
         path, _ = self.route()
         try:
             self.check_access()
-            self.check_origin()
+            self.check_origin(path)
             parts = path.split("/")
             if path.startswith("/api/media/") and len(parts) == 5:
                 return self.send_json(self.app.delete(parts[3], parts[4]))
