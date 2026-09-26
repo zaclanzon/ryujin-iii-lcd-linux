@@ -42,7 +42,6 @@ import hmac
 import io
 import json
 import math
-import mimetypes
 import os
 import signal
 import struct
@@ -510,7 +509,10 @@ class TemperaturePlayer(SlideshowPlayer):
 
 # --- media cache and config -------------------------------------------------------------
 def media_path(ftype, slot):
-    return os.path.join(DATA_DIR, "media", f"{ftype}-{slot}.{EXT[ftype]}")
+    # Callers pass a type and slot that check_slot accepted. Build the name from
+    # EXT's own key and an int, so no request text reaches the file system.
+    ftype = next(known for known in EXT if known == ftype)
+    return os.path.join(DATA_DIR, "media", f"{ftype}-{int(slot)}.{EXT[ftype]}")
 
 
 def media_meta(ftype, slot):
@@ -1168,12 +1170,23 @@ class App:
 
 
 # --- HTTP ----------------------------------------------------------------------------
+# Every file this server sends: the static UI and the cached GIF and JPEG
+# media. Content-Type comes from this table, never from the request.
+CONTENT_TYPES = (
+    (".html", "text/html"),
+    (".css", "text/css"),
+    (".js", "text/javascript"),
+    (".gif", "image/gif"),
+    (".jpg", "image/jpeg"),
+)
+
+
 # Loopback pages (this one, or a local dashboard that previews it) may frame
 # the UI; a page on another site may not.
 SECURITY_HEADERS = (
     ("X-Content-Type-Options", "nosniff"),
     ("Content-Security-Policy",
-     "frame-ancestors 'self' http://127.0.0.1:* http://localhost:* http://[::1]:*"),
+     "frame-ancestors 'self' http://127.0.0.1:* http://localhost:*"),
     ("Referrer-Policy", "no-referrer"),
 )
 
@@ -1271,7 +1284,8 @@ class Handler(BaseHTTPRequestHandler):
                 data = f.read()
         except OSError:
             return self.send_json({"error": "not found"}, 404)
-        ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
+        ctype = next((ctype for ext, ctype in CONTENT_TYPES if path.endswith(ext)),
+                     "application/octet-stream")
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))

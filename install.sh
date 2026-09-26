@@ -18,6 +18,13 @@ for arg in "$@"; do
     *) echo "unknown option $arg (--monitor, --web, --no-udev)"; exit 2 ;;
   esac
 done
+# A rig managed by rigctl links this venv into an installed release; writing
+# into it here changes that release behind rigctl's back (rigctl verify then
+# reports drift). Packages alone are fine.
+if [ "$packages_only" = 0 ] && [ -f "$HOME/.local/state/rig-deck/installed.json" ]; then
+  echo 'This rig uses managed releases. Use rigctl install ryujin-iii-lcd-linux from the rig checkout.' >&2
+  exit 1
+fi
 
 . "$REPO/scripts/linux-deps.sh"
 if [[ "$LINUX_SETUP_DRY_RUN" == 0 && "$EUID" == 0 && "$packages_only" == 0 ]]; then
